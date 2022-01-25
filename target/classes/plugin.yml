@@ -1,0 +1,14 @@
+name: SLCraftPlugin
+version: '1.2'
+main: com.slprojects.slcraftplugin.Main
+depend: [PlaceholderAPI]
+api-version: 1.18
+authors: [ SofianeLasri ]
+description: Plugin principal de SL-Craft
+website: https://sl-projects.com
+commands:
+  wild:
+    description: Te permet de te téléporter à une coordonnée aléatoire
+    aliases: [wild, tpr, tprandom]
+    usage: /wild
+    permission: slcraft.wild
