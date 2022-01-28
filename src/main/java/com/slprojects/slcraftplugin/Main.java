@@ -9,6 +9,7 @@ import org.bukkit.Statistic;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -76,24 +77,29 @@ public final class Main extends JavaPlugin implements Listener {
         getServer().getOnlinePlayers().forEach(this::savePlayer);
     }
 
-    @EventHandler
-    @SuppressWarnings("unchecked")
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerJoin(PlayerJoinEvent e) {
         playTimeUsersIndexes.add(e.getPlayer().getUniqueId());
         playTimeUsersDate.add(LocalDateTime.now());
 
-        if(getConfig().getBoolean("player-join-playSound")){
-            for(Player p : getServer().getOnlinePlayers()){
+        String welcomeMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), getConfig().getString("player-join-message"));
+        e.setJoinMessage(welcomeMessage);
+        for(Player p : getServer().getOnlinePlayers()){
+            if(getConfig().getBoolean("player-join-playSound")){
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0);
             }
+            //p.sendMessage(welcomeMessage);
         }
-        getLogger().info("test");
-        getServer().broadcastMessage(getConfig().getString("player-join-message"));
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerQuit(PlayerQuitEvent e) {
         savePlayer(e.getPlayer());
+        String quitMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), getConfig().getString("player-quit-message"));
+        e.setQuitMessage(quitMessage);
+        for(Player p : getServer().getOnlinePlayers()){
+            //p.sendMessage(quitMessage);
+        }
     }
 
     // Propre au compteur de temps de jeu
