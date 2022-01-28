@@ -4,6 +4,7 @@ package com.slprojects.slcraftplugin;
 
 import com.slprojects.slcraftplugin.commandes.wildCommand;
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.Statistic;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -52,6 +53,7 @@ public final class Main extends JavaPlugin implements Listener {
 
         // Plugin startup logic
         saveDefaultConfig();
+        reloadConfig();
         config = getConfig();
 
         // On initialise la base de donnée
@@ -78,7 +80,15 @@ public final class Main extends JavaPlugin implements Listener {
     @SuppressWarnings("unchecked")
     public void onPlayerJoin(PlayerJoinEvent e) {
         playTimeUsersIndexes.add(e.getPlayer().getUniqueId());
-            playTimeUsersDate.add(LocalDateTime.now());
+        playTimeUsersDate.add(LocalDateTime.now());
+
+        if(getConfig().getBoolean("player-join-playSound")){
+            for(Player p : getServer().getOnlinePlayers()){
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0);
+            }
+        }
+        getLogger().info("test");
+        getServer().broadcastMessage(getConfig().getString("player-join-message"));
     }
 
     @EventHandler

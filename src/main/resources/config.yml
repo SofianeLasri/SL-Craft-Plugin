@@ -22,3 +22,7 @@ database:
   database: db # name of your database. A database server can contain multiple databases
   user: username
   password: password
+
+player-join-playSound: true
+player-join-message: "&a%player_name% &fa rejoint le serveur :D"
+player-quit-message: "&a%player_name% &fvient de quitter le serveur :'("
