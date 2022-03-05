@@ -12,3 +12,9 @@ commands:
     aliases: [wild, tpr, tprandom]
     usage: /wild
     permission: slcraft.wild
+
+  getlinkcode:
+    description: Te permet d'obtenir un code pour associer ton compte Minecraft au site internet du serveur.'
+    aliases: [ getlinkcode ]
+    usage: /getlinkcode
+    permission: slcraft.getlinkcode
