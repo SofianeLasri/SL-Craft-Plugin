@@ -2,6 +2,10 @@ package com.slprojects.slcraftplugin.tachesParalleles;
 
 import com.slprojects.slcraftplugin.Main;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,6 +13,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URLDecoder;
 
 public class waitForDiscordMsg {
     public static void startServer(Main plugin){
@@ -45,8 +50,38 @@ public class waitForDiscordMsg {
                         while ((line = in.readLine()) != null) {
                             if (line.length() == 0)
                                 break;
-                            out.print(line + "\r\n");
-                            plugin.getLogger().info(line);
+                            //out.print(line + "\r\n");
+                            //plugin.getLogger().info(line);
+
+                            // On va regarder si la ligne commence par GET
+                            if (line.startsWith("GET")) {
+                                // On split par les espaces
+                                String[] split = line.split(" ");
+                                // Et on récupère le nom de la commande
+                                String command = split[1];
+
+                                // On split par des /
+                                String[] split2 = command.split("/");
+                                // On récupère le nom de la commande
+                                String commandName = split2[1];
+
+                                switch (commandName) {
+                                    case "discordMsg":
+                                        // On récupère le message
+                                        JSONObject json = (JSONObject) new JSONParser().parse(URLDecoder.decode(split2[2], "UTF-8"));
+                                        String message = json.get("message").toString();
+                                        String playerName = json.get("playerName").toString();
+
+                                        // On envoie le message aux joueurs
+                                        for(Player p : plugin.getServer().getOnlinePlayers()){
+                                            p.sendMessage(ChatColor.DARK_PURPLE + playerName + " : " + ChatColor.WHITE + message);
+                                        }
+                                        out.print("Message envoyé !");
+                                        break;
+                                    default:
+                                        out.print("La commande \""+commandName + "\" n'est pas reconnue.\r\n");
+                                }
+                            }
                         }
 
                         // Close socket, breaking the connection to the client, and
@@ -57,6 +92,8 @@ public class waitForDiscordMsg {
                     }
                 } catch (IOException e) {
                     plugin.getLogger().info(ChatColor.RED + "Erreur lors de l'écoute du port " + ChatColor.GOLD  + serverPort);
+                    e.printStackTrace();
+                } catch (ParseException e) {
                     e.printStackTrace();
                 }
             }
