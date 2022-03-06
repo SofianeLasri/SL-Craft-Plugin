@@ -26,3 +26,6 @@ database:
 player-join-playSound: true
 player-join-message: "&a%player_name% &fa rejoint le serveur :D"
 player-quit-message: "&a%player_name% &fvient de quitter le serveur :'("
+
+# Serveur messagerie
+msg-server-port: 25566

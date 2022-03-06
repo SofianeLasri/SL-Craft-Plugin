@@ -4,6 +4,8 @@ package com.slprojects.slcraftplugin;
 
 import com.slprojects.slcraftplugin.commandes.linkCodeCommand;
 import com.slprojects.slcraftplugin.commandes.wildCommand;
+import com.slprojects.slcraftplugin.tachesParalleles.waitForDiscordMsg;
+import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.Statistic;
@@ -12,13 +14,23 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.json.simple.JSONObject;
 import org.mariadb.jdbc.MariaDbPoolDataSource;
 
-import java.sql.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -26,8 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import me.clip.placeholderapi.PlaceholderAPI;
 
 import static java.lang.Integer.parseInt;
 
@@ -68,6 +78,8 @@ public final class Main extends JavaPlugin implements Listener {
         linkCodeCommand linkCodeCommand = new linkCodeCommand(this);
         getCommand("getLinkCode").setExecutor(linkCodeCommand);
 
+        waitForDiscordMsg.startServer(this);
+
         getLogger().info(ChatColor.GREEN+"SL-Craft | Plugin démarré");
     }
 
@@ -105,6 +117,46 @@ public final class Main extends JavaPlugin implements Listener {
         }
     }
 
+    // On renvoie chaque message des joueurs sur le canal de chat du serveur discord
+    @SuppressWarnings("unchecked")
+    @EventHandler(priority = EventPriority.LOWEST)
+    void AsyncChatEvent(AsyncPlayerChatEvent e) throws UnsupportedEncodingException {
+        // On va appeler l'api du bot discord
+        JSONObject json = new JSONObject();
+        json.put("message", e.getMessage());
+        json.put("username", e.getPlayer().getName());
+
+        String urlString = "http://node.sl-projects.com:27001/mc/chat/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
+        getLogger().info(urlString);
+        // Processus long et chiant
+        try {
+            URL url = new URL(urlString);
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+            con.setRequestProperty("User-Agent", "Mozilla/5.0");
+            con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+            con.setRequestProperty("Content-Type", "application/json");
+            con.setDoOutput(true);
+            con.setDoInput(true);
+            con.setUseCaches(false);
+            con.setAllowUserInteraction(false);
+            con.setConnectTimeout(5000);
+            con.setReadTimeout(5000);
+            con.connect();
+            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuilder response = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            con.disconnect();
+            getLogger().info(response.toString());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
     // Propre au compteur de temps de jeu
     @SuppressWarnings("unchecked")
     public void savePlayer(Player player) {
@@ -136,7 +188,7 @@ public final class Main extends JavaPlugin implements Listener {
         // On ouvre la bdd
         Connection con = bddOpenConn();
         try {
-            // On va regarder si l'utilisateur existe
+            // On va regarder si Le joueur existe
             PreparedStatement rechercheUtilisateur = con.prepareStatement("SELECT COUNT(*) FROM site_userSetting WHERE uuid = ?");
             rechercheUtilisateur.setString(1, target.get("uuid").toString());
             ResultSet resultat = rechercheUtilisateur.executeQuery();
@@ -156,7 +208,7 @@ public final class Main extends JavaPlugin implements Listener {
                     insertionNbJoins.setString(2, target.get("joins").toString());
                     insertionNbJoins.executeQuery();
 
-                    // On va regarder si l'utilisateur a déjà joué avant (vu qu'on avait pas de données sur ce joueur)
+                    // On va regarder si Le joueur a déjà joué avant (vu qu'on avait pas de données sur ce joueur)
                     if(target.get("hasPlayedBefore").toString().equals("true")){
                         // On va piocher la date d'inscription chez CoreProtect (si elle existe)
                         // On la prend chez CoreProtect car le plugin a été installé dans les premières semaines du serveur. Il a donc bcp plus de données que nous concernant les anciens joueurs.
@@ -172,9 +224,9 @@ public final class Main extends JavaPlugin implements Listener {
                             insertionDateInscription.executeQuery();
 
                             // On va précisier que la date d'inscription a été trouvée chez CoreProtect
-                            getLogger().info("L'utilisateur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs. On lui a donc attribué comme date de création du compte, celle que détenait CoreProtect.");
+                            getLogger().info("Le joueur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs. On lui a donc attribué comme date de création du compte, celle que détenait CoreProtect.");
                         } else {
-                            // On insère la date d'inscription (du coup on considère que l'utilisateur n'a pas joué avant, malgré la condition)
+                            // On insère la date d'inscription (du coup on considère que Le joueur n'a pas joué avant, malgré la condition)
                             PreparedStatement insertionDateInscription = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joinedDate',?)");
                             insertionDateInscription.setString(1, target.get("uuid").toString());
                             insertionDateInscription.setString(2, java.sql.Timestamp.valueOf(target.get("joinedDate").toString()).toString());
@@ -186,7 +238,7 @@ public final class Main extends JavaPlugin implements Listener {
                             insertionInaccurrateJoinedDate.setString(2, "true");
                             insertionInaccurrateJoinedDate.executeQuery();
                             
-                            getLogger().info("L'utilisateur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs, ni dans la table des utilisateurs de CoreProtect. On lui a donc attribué comme date de création du compte, la date du début de sa partie.");
+                            getLogger().info("Le joueur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs, ni dans la table des utilisateurs de CoreProtect. On lui a donc attribué comme date de création du compte, la date du début de sa partie.");
                         }
                     }else{
                         // C'est un nouvel utilisateur, on peut lui attribuer la date d'inscription précédement calculée
@@ -230,7 +282,7 @@ public final class Main extends JavaPlugin implements Listener {
                                 insertionDateInscription.executeQuery();
 
                                 // On va précisier que la date d'inscription a été trouvée chez CoreProtect
-                                getLogger().info("L'utilisateur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs. On lui a donc attribué comme date de création du compte, celle que détenait CoreProtect.");
+                                getLogger().info("Le joueur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs. On lui a donc attribué comme date de création du compte, celle que détenait CoreProtect.");
                             } else {
                                 // On insère la date d'inscription (du coup, comme précédement, on prend la date d'inscription locale)
                                 PreparedStatement insertionDateInscription = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joinedDate',?)");
@@ -244,7 +296,7 @@ public final class Main extends JavaPlugin implements Listener {
                                 insertionInaccurrateJoinedDate.setString(2, "true");
                                 insertionInaccurrateJoinedDate.executeQuery();
 
-                                getLogger().info("L'utilisateur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs, ni dans la table des utilisateurs de CoreProtect. On lui a donc attribué comme date de création du compte, la date du début de sa partie.");
+                                getLogger().info("Le joueur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs, ni dans la table des utilisateurs de CoreProtect. On lui a donc attribué comme date de création du compte, la date du début de sa partie.");
                             }
                         }
 
@@ -325,4 +377,11 @@ public final class Main extends JavaPlugin implements Listener {
             getLogger().warning(ChatColor.RED+"Erreur lors de l'exécution de initDatabase(): "+e);
         }
     }
+
+    // API Spring
+    /*
+    @GetMapping("/discordMsg/{jsonEncodedString}")
+    void sendDiscordMessage(){
+
+    }*/
 }
