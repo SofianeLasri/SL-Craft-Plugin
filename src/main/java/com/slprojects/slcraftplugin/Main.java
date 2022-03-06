@@ -377,11 +377,4 @@ public final class Main extends JavaPlugin implements Listener {
             getLogger().warning(ChatColor.RED+"Erreur lors de l'exécution de initDatabase(): "+e);
         }
     }
-
-    // API Spring
-    /*
-    @GetMapping("/discordMsg/{jsonEncodedString}")
-    void sendDiscordMessage(){
-
-    }*/
 }
