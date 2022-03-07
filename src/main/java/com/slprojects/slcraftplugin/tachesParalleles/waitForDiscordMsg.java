@@ -74,8 +74,9 @@ public class waitForDiscordMsg {
 
                                         // On envoie le message aux joueurs
                                         for(Player p : plugin.getServer().getOnlinePlayers()){
-                                            p.sendMessage(ChatColor.DARK_PURPLE + playerName + " : " + ChatColor.WHITE + message);
+                                            p.sendMessage(ChatColor.DARK_PURPLE + playerName + ChatColor.WHITE + ": " + message);
                                         }
+                                        plugin.getLogger().info(ChatColor.DARK_PURPLE + playerName + ": " + message);
                                         out.print("Message envoyé !");
                                         break;
                                     default:

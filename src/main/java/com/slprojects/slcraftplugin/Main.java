@@ -4,11 +4,11 @@ package com.slprojects.slcraftplugin;
 
 import com.slprojects.slcraftplugin.commandes.linkCodeCommand;
 import com.slprojects.slcraftplugin.commandes.wildCommand;
+import com.slprojects.slcraftplugin.tachesParalleles.savePlayerData;
 import com.slprojects.slcraftplugin.tachesParalleles.waitForDiscordMsg;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
-import org.bukkit.Statistic;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -29,24 +29,17 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.Integer.parseInt;
-
 public final class Main extends JavaPlugin implements Listener {
     // Variables
     private List<UUID> wildCommandActiveUsers;
-    private List<UUID> playTimeUsersIndexes;
-    private List<LocalDateTime> playTimeUsersDate;
     private static FileConfiguration config;
+    private com.slprojects.slcraftplugin.tachesParalleles.savePlayerData savePlayerData;
 
     // Fonctions appelées à des évènements clés
     @Override
@@ -65,13 +58,12 @@ public final class Main extends JavaPlugin implements Listener {
         saveDefaultConfig();
         reloadConfig();
         config = getConfig();
+        savePlayerData = new savePlayerData(this);
 
         // On initialise la base de donnée
         initDatabase();
 
         wildCommandActiveUsers = new ArrayList<>();
-        playTimeUsersIndexes = new ArrayList<>();
-        playTimeUsersDate = new ArrayList<>();
         wildCommand wildCommand = new wildCommand(this);
         getCommand("wild").setExecutor(wildCommand);
 
@@ -88,13 +80,14 @@ public final class Main extends JavaPlugin implements Listener {
         // Plugin shutdown logic
         getLogger().info(ChatColor.RED+"SL-Craft | Plugin éteint");
 
-        getServer().getOnlinePlayers().forEach(this::savePlayer);
+        getServer().getOnlinePlayers().forEach(player -> {
+            savePlayerData.saveOnQuit(player);
+        });
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerJoin(PlayerJoinEvent e) {
-        playTimeUsersIndexes.add(e.getPlayer().getUniqueId());
-        playTimeUsersDate.add(LocalDateTime.now());
+        savePlayerData.saveOnJoin(e.getPlayer());
 
         // On affiche le message de bienvenue
         String welcomeMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), getConfig().getString("player-join-message"));
@@ -110,7 +103,7 @@ public final class Main extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerQuit(PlayerQuitEvent e) {
-        savePlayer(e.getPlayer());
+        savePlayerData.saveOnQuit(e.getPlayer());
         String quitMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), getConfig().getString("player-quit-message"));
         for(Player p : getServer().getOnlinePlayers()){
             p.sendMessage(quitMessage);
@@ -118,7 +111,7 @@ public final class Main extends JavaPlugin implements Listener {
     }
 
     // On renvoie chaque message des joueurs sur le canal de chat du serveur discord
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "deprecation"})
     @EventHandler(priority = EventPriority.LOWEST)
     void AsyncChatEvent(AsyncPlayerChatEvent e) throws UnsupportedEncodingException {
         // On va appeler l'api du bot discord
@@ -127,7 +120,6 @@ public final class Main extends JavaPlugin implements Listener {
         json.put("username", e.getPlayer().getName());
 
         String urlString = "http://node.sl-projects.com:27001/mc/chat/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
-        getLogger().info(urlString);
         // Processus long et chiant
         try {
             URL url = new URL(urlString);
@@ -154,162 +146,6 @@ public final class Main extends JavaPlugin implements Listener {
             getLogger().info(response.toString());
         } catch (Exception ex) {
             ex.printStackTrace();
-        }
-    }
-
-    // Propre au compteur de temps de jeu
-    @SuppressWarnings("unchecked")
-    public void savePlayer(Player player) {
-        JSONObject target = new JSONObject();
-        // On ajoute l'uuid et son nom
-        target.put("uuid", player.getUniqueId().toString());
-        target.put("name", player.getName());
-        
-        // La date de join (locale, au cas où CoreProtect ne l'a pas)
-        target.put("joinedDate", playTimeUsersDate.get(playTimeUsersIndexes.indexOf(player.getUniqueId())).toString());
-
-        // On calcule le temps de jeu
-        LocalDateTime timeNow = LocalDateTime.now();
-        Duration duration = Duration.between(timeNow, playTimeUsersDate.get(playTimeUsersIndexes.indexOf(player.getUniqueId())));
-        long playedTimeInSeconds = Math.abs(duration.toSeconds());
-
-        // On ajoute le temps de jeu au joueur
-        target.put("playedTime", playedTimeInSeconds);
-
-        playTimeUsersDate.remove(playTimeUsersIndexes.indexOf(player.getUniqueId()));
-        playTimeUsersIndexes.remove(player.getUniqueId());
-
-        target.put("joins", player.getStatistic(Statistic.LEAVE_GAME) + 1);
-        target.put("hasPlayedBefore", player.hasPlayedBefore());
-        writePlayer(target);
-    }
-
-    private void writePlayer(JSONObject target) {
-        // On ouvre la bdd
-        Connection con = bddOpenConn();
-        try {
-            // On va regarder si Le joueur existe
-            PreparedStatement rechercheUtilisateur = con.prepareStatement("SELECT COUNT(*) FROM site_userSetting WHERE uuid = ?");
-            rechercheUtilisateur.setString(1, target.get("uuid").toString());
-            ResultSet resultat = rechercheUtilisateur.executeQuery();
-            if(resultat.next()) {
-                int playerExist = resultat.getInt(1);
-
-                if(playerExist==0){
-                    // On insère la dernière date de join
-                    PreparedStatement insertionLastJoin = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'playedTime',?)");
-                    insertionLastJoin.setString(1, target.get("uuid").toString());
-                    insertionLastJoin.setString(2, target.get("playedTime").toString());
-                    insertionLastJoin.executeQuery();
-
-                    // On insère le nombre de connexions
-                    PreparedStatement insertionNbJoins = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joins',?)");
-                    insertionNbJoins.setString(1, target.get("uuid").toString());
-                    insertionNbJoins.setString(2, target.get("joins").toString());
-                    insertionNbJoins.executeQuery();
-
-                    // On va regarder si Le joueur a déjà joué avant (vu qu'on avait pas de données sur ce joueur)
-                    if(target.get("hasPlayedBefore").toString().equals("true")){
-                        // On va piocher la date d'inscription chez CoreProtect (si elle existe)
-                        // On la prend chez CoreProtect car le plugin a été installé dans les premières semaines du serveur. Il a donc bcp plus de données que nous concernant les anciens joueurs.
-                        PreparedStatement rechercheDateInscription = con.prepareStatement("SELECT time FROM co_user WHERE uuid = ?");
-                        rechercheDateInscription.setString(1, target.get("uuid").toString());
-                        resultat = rechercheDateInscription.executeQuery();
-
-                        if(resultat.next()){
-                            // On insère la date d'inscription
-                            PreparedStatement insertionDateInscription = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joinedDate',?)");
-                            insertionDateInscription.setString(1, target.get("uuid").toString());
-                            insertionDateInscription.setString(2, java.sql.Timestamp.valueOf(LocalDateTime.ofEpochSecond(Long.parseLong(resultat.getString("time")), 0, ZoneOffset.UTC)).toString()); // Il faut convertir le timestamp (epoch second) en date
-                            insertionDateInscription.executeQuery();
-
-                            // On va précisier que la date d'inscription a été trouvée chez CoreProtect
-                            getLogger().info("Le joueur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs. On lui a donc attribué comme date de création du compte, celle que détenait CoreProtect.");
-                        } else {
-                            // On insère la date d'inscription (du coup on considère que Le joueur n'a pas joué avant, malgré la condition)
-                            PreparedStatement insertionDateInscription = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joinedDate',?)");
-                            insertionDateInscription.setString(1, target.get("uuid").toString());
-                            insertionDateInscription.setString(2, java.sql.Timestamp.valueOf(target.get("joinedDate").toString()).toString());
-                            insertionDateInscription.executeQuery();
-                            
-                            // On va préciser que la date d'inscription n'a pas été trouvée chez CoreProtect
-                            PreparedStatement insertionInaccurrateJoinedDate = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'inaccurrateJoinedDate',?)");
-                            insertionInaccurrateJoinedDate.setString(1, target.get("uuid").toString());
-                            insertionInaccurrateJoinedDate.setString(2, "true");
-                            insertionInaccurrateJoinedDate.executeQuery();
-                            
-                            getLogger().info("Le joueur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs, ni dans la table des utilisateurs de CoreProtect. On lui a donc attribué comme date de création du compte, la date du début de sa partie.");
-                        }
-                    }else{
-                        // C'est un nouvel utilisateur, on peut lui attribuer la date d'inscription précédement calculée
-                        PreparedStatement insertionDateInscription = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joinedDate',?)");
-                        insertionDateInscription.setString(1, target.get("uuid").toString());
-                        insertionDateInscription.setString(2, java.sql.Timestamp.valueOf(target.get("joinedDate").toString()).toString());
-                        insertionDateInscription.executeQuery();
-                    }
-                }else{
-                    PreparedStatement tempsJeuJoueur = con.prepareStatement("SELECT value FROM site_userSetting WHERE uuid = ? AND name = 'playedTime'");
-                    tempsJeuJoueur.setString(1, target.get("uuid").toString());
-                    resultat = tempsJeuJoueur.executeQuery();
-                    if(resultat.next()) {
-                        int totalPlayedTime = parseInt(resultat.getString(1)) + parseInt(target.get("playedTime").toString());
-                        PreparedStatement modifyPlayedTime = con.prepareStatement("UPDATE `site_userSetting` SET `value`=? WHERE  `uuid`=? AND `name`='playedTime'");
-                        modifyPlayedTime.setInt(1, totalPlayedTime);
-                        modifyPlayedTime.setString(2, target.get("uuid").toString());
-                        modifyPlayedTime.executeQuery();
-
-                        PreparedStatement modifyNbJoins = con.prepareStatement("UPDATE `site_userSetting` SET `value`=? WHERE  `uuid`=? AND `name`='joins'");
-                        modifyNbJoins.setString(1, target.get("joins").toString());
-                        modifyNbJoins.setString(2, target.get("uuid").toString());
-                        modifyNbJoins.executeQuery();
-
-                        // On va regarder s'il a sa date d'inscription de renseignée
-                        PreparedStatement rechercheDateInscription = con.prepareStatement("SELECT * FROM site_userSetting WHERE uuid = ? AND name = 'joinedDate'");
-                        rechercheDateInscription.setString(1, target.get("uuid").toString());
-                        resultat = rechercheDateInscription.executeQuery();
-
-                        if(!resultat.next()){
-                            // On va regarder si l'on dispose de sa date d'inscription chez CoreProtect
-                            rechercheDateInscription = con.prepareStatement("SELECT time FROM co_user WHERE uuid = ?");
-                            rechercheDateInscription.setString(1, target.get("uuid").toString());
-                            resultat = rechercheDateInscription.executeQuery();
-
-                            if(resultat.next()){
-                                // On insère la date d'inscription
-                                PreparedStatement insertionDateInscription = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joinedDate',?)");
-                                insertionDateInscription.setString(1, target.get("uuid").toString());
-                                insertionDateInscription.setString(2, java.sql.Timestamp.valueOf(LocalDateTime.ofEpochSecond(Long.parseLong(resultat.getString("time")), 0, ZoneOffset.UTC)).toString()); // Il faut convertir le timestamp (epoch second) en date
-                                insertionDateInscription.executeQuery();
-
-                                // On va précisier que la date d'inscription a été trouvée chez CoreProtect
-                                getLogger().info("Le joueur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs. On lui a donc attribué comme date de création du compte, celle que détenait CoreProtect.");
-                            } else {
-                                // On insère la date d'inscription (du coup, comme précédement, on prend la date d'inscription locale)
-                                PreparedStatement insertionDateInscription = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joinedDate',?)");
-                                insertionDateInscription.setString(1, target.get("uuid").toString());
-                                insertionDateInscription.setString(2, java.sql.Timestamp.valueOf(target.get("joinedDate").toString()).toString());
-                                insertionDateInscription.executeQuery();
-
-                                // On va préciser que la date d'inscription n'a pas été trouvée chez CoreProtect
-                                PreparedStatement insertionInaccurrateJoinedDate = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'inaccurrateJoinedDate',?)");
-                                insertionInaccurrateJoinedDate.setString(1, target.get("uuid").toString());
-                                insertionInaccurrateJoinedDate.setString(2, "true");
-                                insertionInaccurrateJoinedDate.executeQuery();
-
-                                getLogger().info("Le joueur "+ChatColor.GOLD+target.get("name").toString()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs, ni dans la table des utilisateurs de CoreProtect. On lui a donc attribué comme date de création du compte, la date du début de sa partie.");
-                            }
-                        }
-
-                    }else{
-                        getLogger().warning(ChatColor.RED+"Erreur, nous n'avons pas de resultats pour la requête: SELECT value FROM site_userSetting WHERE uuid = '"+target.get("uuid")+"' AND name = playedTime");
-                    }
-                }
-            }else{
-                getLogger().warning(ChatColor.RED+"Erreur, nous n'avons pas de resultats pour la requête: SELECT COUNT(*) FROM site_userSetting WHERE uuid = '"+target.get("uuid").toString()+"' AND rownum = 1");
-            }
-            con.close();
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
