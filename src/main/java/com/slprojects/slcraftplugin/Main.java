@@ -32,6 +32,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -65,10 +66,10 @@ public final class Main extends JavaPlugin implements Listener {
 
         wildCommandActiveUsers = new ArrayList<>();
         wildCommand wildCommand = new wildCommand(this);
-        getCommand("wild").setExecutor(wildCommand);
+        Objects.requireNonNull(getCommand("wild")).setExecutor(wildCommand);
 
         linkCodeCommand linkCodeCommand = new linkCodeCommand(this);
-        getCommand("getLinkCode").setExecutor(linkCodeCommand);
+        Objects.requireNonNull(getCommand("getLinkCode")).setExecutor(linkCodeCommand);
 
         waitForDiscordMsg.startServer(this);
 
@@ -80,17 +81,17 @@ public final class Main extends JavaPlugin implements Listener {
         // Plugin shutdown logic
         getLogger().info(ChatColor.RED+"SL-Craft | Plugin éteint");
 
-        getServer().getOnlinePlayers().forEach(player -> {
-            savePlayerData.saveOnQuit(player);
-        });
+        getServer().getOnlinePlayers().forEach(player -> savePlayerData.saveOnQuit(player));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerJoin(PlayerJoinEvent e) {
+        // On désactive le message par défaut
+        e.joinMessage(null);
         savePlayerData.saveOnJoin(e.getPlayer());
 
         // On affiche le message de bienvenue
-        String welcomeMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), getConfig().getString("player-join-message"));
+        String welcomeMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("player-join-message")));
         // Et on joue un petit son chez tous les joueurs
         for(Player p : getServer().getOnlinePlayers()){
             p.sendMessage(welcomeMessage);
@@ -103,8 +104,10 @@ public final class Main extends JavaPlugin implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerQuit(PlayerQuitEvent e) {
+        // On désactive le message par défaut
+        e.quitMessage(null);
         savePlayerData.saveOnQuit(e.getPlayer());
-        String quitMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), getConfig().getString("player-quit-message"));
+        String quitMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("player-quit-message")));
         for(Player p : getServer().getOnlinePlayers()){
             p.sendMessage(quitMessage);
         }
@@ -113,20 +116,35 @@ public final class Main extends JavaPlugin implements Listener {
     // On renvoie chaque message des joueurs sur le canal de chat du serveur discord
     @SuppressWarnings({"unchecked", "deprecation"})
     @EventHandler(priority = EventPriority.LOWEST)
-    void AsyncChatEvent(AsyncPlayerChatEvent e) throws UnsupportedEncodingException {
+    void AsyncChatEvent(AsyncPlayerChatEvent e) {
         // On va appeler l'api du bot discord
         JSONObject json = new JSONObject();
         json.put("message", e.getMessage());
         json.put("username", e.getPlayer().getName());
 
-        String urlString = "http://node.sl-projects.com:27001/mc/chat/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
+        try {
+            String urlString = config.getString("discordBot-api-url") + "mc/chat/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
+
+            String response = getHttp(urlString);
+            if(getConfig().getBoolean("msg-verbose")){
+                getLogger().info("Func AsyncChatEvent(PlayerChatEvent e), HTTP response:" + response);
+            }
+        } catch (UnsupportedEncodingException ex) {
+            getLogger().warning(ChatColor.RED + "Impossible de d'encoder les données. Func AsyncChatEvent(PlayerChatEvent e)");
+            ex.printStackTrace();
+        }
+    }
+
+    // Permet de faire des appels vers l'api discord
+    public String getHttp(String urlString) {
+        String returnData = "";
         // Processus long et chiant
         try {
             URL url = new URL(urlString);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
             con.setRequestProperty("User-Agent", "Mozilla/5.0");
-            con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+            con.setRequestProperty("Accept-Language", "fr-FR,fr;q=0.5");
             con.setRequestProperty("Content-Type", "application/json");
             con.setDoOutput(true);
             con.setDoInput(true);
@@ -137,16 +155,22 @@ public final class Main extends JavaPlugin implements Listener {
             con.connect();
             BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
             String inputLine;
+
             StringBuilder response = new StringBuilder();
             while ((inputLine = in.readLine()) != null) {
                 response.append(inputLine);
             }
+
+
             in.close();
             con.disconnect();
-            getLogger().info(response.toString());
+            returnData = response.toString();
         } catch (Exception ex) {
+            getLogger().warning(ChatColor.RED + "Impossible de se connecter à l'url " + urlString + ". Func getHttp(String urlString)");
             ex.printStackTrace();
         }
+
+        return returnData;
     }
 
     // Propre à la commande wild: évite les spams de la commande

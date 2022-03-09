@@ -66,7 +66,7 @@ public class linkCodeCommand implements CommandExecutor {
                 }
                 player.sendMessage("Utilise ce code pour lier ton compte: "+ChatColor.GREEN+generatedString);
                 player.sendMessage(ChatColor.GRAY+"Ce code à usage unique expirera dans 5 minutes.");
-                plugin.getLogger().info("Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a généré le code "+ChatColor.GREEN+generatedString+ChatColor.RESET+ChatColor.GRAY+" - Il expirera le "+java.sql.Timestamp.valueOf(LocalDateTime.now().plusMinutes(5)).toString());
+                plugin.getLogger().info("Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a généré le code "+ChatColor.GREEN+generatedString+ChatColor.RESET+ChatColor.GRAY+" - Il expirera le "+ java.sql.Timestamp.valueOf(LocalDateTime.now().plusMinutes(5)));
 
             }catch (Exception e){
                 e.printStackTrace();

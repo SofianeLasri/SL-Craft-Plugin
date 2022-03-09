@@ -29,3 +29,7 @@ player-quit-message: "&a%player_name% &fvient de quitter le serveur :'("
 
 # Serveur messagerie
 msg-server-port: 25575
+msg-verbose: false
+
+# API Bot Discord
+discordBot-api-url: "http://node.sl-projects.com:27001/"

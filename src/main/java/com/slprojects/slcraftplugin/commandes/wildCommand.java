@@ -9,16 +9,17 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 import static java.lang.Math.abs;
 
 public class wildCommand implements CommandExecutor {
     // Variables
-    private Main plugin;
+    private final Main plugin;
 
 
     public wildCommand(Main plugin){
@@ -27,7 +28,8 @@ public class wildCommand implements CommandExecutor {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    @SuppressWarnings("unchecked")
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         // On vérifie que la commande a bien été lancée par un joueur
         if (sender instanceof Player) {
             Player player = (Player) sender;
@@ -41,7 +43,7 @@ public class wildCommand implements CommandExecutor {
             plugin.getLogger().info("Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.GREEN+"accepté");
 
             // on récupère la liste des biomes exclus
-            List<String> excludedBiomes = new ArrayList<String>();
+            List<String> excludedBiomes;
             excludedBiomes = (List<String>) plugin.getConfig().getList("excluded-biomes");
 
             player.sendMessage("§6Téléportation vers une coordonnée aléatoire.");
@@ -58,13 +60,13 @@ public class wildCommand implements CommandExecutor {
                 flag=false;
                 x = r.nextInt(high-low) + low;
                 z = r.nextInt(high-low) + low;
-                y = Bukkit.getWorld(plugin.getConfig().getString("world")).getHighestBlockYAt(x, z);
+                y = Objects.requireNonNull(Bukkit.getWorld(Objects.requireNonNull(plugin.getConfig().getString("world")))).getHighestBlockYAt(x, z);
                 y++; // On incrémente la pos Y pour éviter que le joueur se retrouve dans le sol
 
-                for (String excludedBiome : excludedBiomes) {
+                for (String excludedBiome : Objects.requireNonNull(excludedBiomes)) {
                     try{
                         Biome.valueOf(excludedBiome.toUpperCase());
-                        if (Bukkit.getWorld(plugin.getConfig().getString("world")).getBiome(x, y, z).equals(Biome.valueOf(excludedBiome.toUpperCase()))) {
+                        if (Objects.requireNonNull(Bukkit.getWorld(Objects.requireNonNull(plugin.getConfig().getString("world")))).getBiome(x, y, z).equals(Biome.valueOf(excludedBiome.toUpperCase()))) {
                             flag = true;
                         }
                     }catch(Exception ignored){}
@@ -72,7 +74,7 @@ public class wildCommand implements CommandExecutor {
             }
             // On téléporte le joueur
 
-            Location loc = new Location(Bukkit.getWorld(plugin.getConfig().getString("world")), x, y, z, 0, 0);
+            Location loc = new Location(Bukkit.getWorld(Objects.requireNonNull(plugin.getConfig().getString("world"))), x, y, z, 0, 0);
             player.teleport(loc);
 
             int maxVal = Math.max(abs(x), abs(z));
@@ -86,11 +88,9 @@ public class wildCommand implements CommandExecutor {
             }
 
             // Vu qu'il y a un sleep et que ça bloque le thread, on va exécuter la fonction dans un thread
-            Runnable runnableRemoveActiveUser = new Runnable() {
-                public void run() {
-                    // On retire le joueur de la liste des utilisateurs en attente
-                    plugin.removeActiveUserForWildCommand(player.getUniqueId());
-                }
+            Runnable runnableRemoveActiveUser = () -> {
+                // On retire le joueur de la liste des utilisateurs en attente
+                plugin.removeActiveUserForWildCommand(player.getUniqueId());
             };
 
             new Thread(runnableRemoveActiveUser).start();
