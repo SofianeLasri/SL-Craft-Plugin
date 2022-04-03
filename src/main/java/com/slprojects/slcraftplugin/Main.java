@@ -1,5 +1,3 @@
-// Contient une partie du code de ce plugin: https://github.com/Twi5TeD/PlayTime
-
 package com.slprojects.slcraftplugin;
 
 import com.slprojects.slcraftplugin.commandes.linkCodeCommand;
@@ -47,11 +45,11 @@ public final class Main extends JavaPlugin implements Listener {
     public void onEnable() {
         // On s'assure qu'on a placeholder api
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            getLogger().info("PlaceholderAPI chargé");
+            getServer().getConsoleSender().sendMessage("PlaceholderAPI chargé");
             // On initialise les listeners
             getServer().getPluginManager().registerEvents(this, this);
         } else {
-            getLogger().info(ChatColor.RED+"PlaceholderAPI n'est pas accessible!");
+            getServer().getConsoleSender().sendMessage(ChatColor.RED+"PlaceholderAPI n'est pas accessible!");
             getServer().getPluginManager().disablePlugin(this);
         }
 
@@ -73,13 +71,13 @@ public final class Main extends JavaPlugin implements Listener {
 
         waitForDiscordMsg.startServer(this);
 
-        getLogger().info(ChatColor.GREEN+"SL-Craft | Plugin démarré");
+        getServer().getConsoleSender().sendMessage(ChatColor.GREEN+"SL-Craft | Plugin démarré");
     }
 
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-        getLogger().info(ChatColor.RED+"SL-Craft | Plugin éteint");
+        getServer().getConsoleSender().sendMessage(ChatColor.RED+"SL-Craft | Plugin éteint");
 
         getServer().getOnlinePlayers().forEach(player -> savePlayerData.saveOnQuit(player));
     }
@@ -127,7 +125,7 @@ public final class Main extends JavaPlugin implements Listener {
 
             String response = getHttp(urlString);
             if(getConfig().getBoolean("msg-verbose")){
-                getLogger().info("Func AsyncChatEvent(PlayerChatEvent e), HTTP response:" + response);
+                getServer().getConsoleSender().sendMessage("Func AsyncChatEvent(PlayerChatEvent e), HTTP response:" + response);
             }
         } catch (UnsupportedEncodingException ex) {
             getLogger().warning(ChatColor.RED + "Impossible de d'encoder les données. Func AsyncChatEvent(PlayerChatEvent e)");

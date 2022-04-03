@@ -18,7 +18,7 @@ public class waitForDiscordMsg {
     public static void startServer(Main plugin){
         int serverPort = plugin.getConfig().getInt("msg-server-port");
 
-        plugin.getLogger().info("Écoute des messages Discord sur le port " + ChatColor.GOLD + serverPort);
+        plugin.getServer().getConsoleSender().sendMessage("Écoute des messages Discord sur le port " + ChatColor.GOLD + serverPort);
         // On fait un thread pour écouter le port
         Runnable serverThread = () -> {
             try {
@@ -49,7 +49,7 @@ public class waitForDiscordMsg {
                         if (line.length() == 0)
                             break;
                         //out.print(line + "\r\n");
-                        //plugin.getLogger().info(line);
+                        //plugin.getServer().getConsoleSender().sendMessage(line);
 
                         // On va regarder si la ligne commence par GET
                         if (line.startsWith("GET")) {
@@ -72,7 +72,7 @@ public class waitForDiscordMsg {
                                 for (Player p : plugin.getServer().getOnlinePlayers()) {
                                     p.sendMessage(ChatColor.DARK_PURPLE + playerName + ChatColor.WHITE + ": " + message);
                                 }
-                                plugin.getLogger().info(ChatColor.DARK_PURPLE + playerName + ": " + message);
+                                plugin.getServer().getConsoleSender().sendMessage(ChatColor.DARK_PURPLE + playerName + ": " + message);
                                 out.print("Message envoyé !");
                             } else {
                                 out.print("La commande \"" + commandName + "\" n'est pas reconnue.\r\n");
@@ -87,7 +87,7 @@ public class waitForDiscordMsg {
                     client.close(); // Close the socket itself
                 }
             } catch (IOException e) {
-                plugin.getLogger().info(ChatColor.RED + "Erreur lors de l'écoute du port " + ChatColor.GOLD  + serverPort);
+                plugin.getServer().getConsoleSender().sendMessage(ChatColor.RED + "Erreur lors de l'écoute du port " + ChatColor.GOLD  + serverPort);
                 e.printStackTrace();
 
                 // On va logger le message sur discord
@@ -99,7 +99,7 @@ public class waitForDiscordMsg {
                     urlString = plugin.getConfig().getString("discordBot-api-url") + "mc/error/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
                     relaunchListener(plugin);
                 } catch (UnsupportedEncodingException ex) {
-                    plugin.getLogger().info(ChatColor.RED + "Erreur lors de l'encodage du message. Func waitForDiscordMsg::startServer(Main plugin)");
+                    plugin.getServer().getConsoleSender().sendMessage(ChatColor.RED + "Erreur lors de l'encodage du message. Func waitForDiscordMsg::startServer(Main plugin)");
                     ex.printStackTrace();
                 }
                 plugin.getHttp(urlString);

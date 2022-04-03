@@ -36,11 +36,11 @@ public class wildCommand implements CommandExecutor {
 
             // On vérifie qu'il n'a pas déjà lancé la commande wild
             if(!plugin.checkActiveUserForWildCommand(player.getUniqueId())){
-                plugin.getLogger().info("Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.RED+"refusé");
+                plugin.getServer().getConsoleSender().sendMessage("Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.RED+"refusé");
                 player.sendMessage("§cVous devez attendre 5s avant de relancer la commande.");
                 return true;
             }
-            plugin.getLogger().info("Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.GREEN+"accepté");
+            plugin.getServer().getConsoleSender().sendMessage("Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.GREEN+"accepté");
 
             // on récupère la liste des biomes exclus
             List<String> excludedBiomes;
