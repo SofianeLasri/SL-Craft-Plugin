@@ -138,10 +138,9 @@ public class internalWebServer {
         };
 
         new Thread(serverThread).start();
-
-
     }
 
+    //TODO: Vérifier l'utilité de cette fonction
     public static void relaunchListener(Main plugin) {
         // On relance la fonction avec une latence
         startServer(plugin);
