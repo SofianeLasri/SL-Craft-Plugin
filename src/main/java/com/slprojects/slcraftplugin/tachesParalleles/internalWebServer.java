@@ -3,6 +3,7 @@ package com.slprojects.slcraftplugin.tachesParalleles;
 import com.slprojects.slcraftplugin.Main;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -13,12 +14,12 @@ import java.net.Socket;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 
-public class waitForDiscordMsg {
+public class internalWebServer {
     @SuppressWarnings({ "unchecked", "InfiniteLoopStatement" })
     public static void startServer(Main plugin){
-        int serverPort = plugin.getConfig().getInt("msg-server-port");
+        int serverPort = plugin.getConfig().getInt("internal-webserver-port");
 
-        plugin.getServer().getConsoleSender().sendMessage("Écoute des messages Discord sur le port " + ChatColor.GOLD + serverPort);
+        plugin.getServer().getConsoleSender().sendMessage("Lancement du serveur web intégré sur le port " + ChatColor.GOLD + serverPort);
         // On fait un thread pour écouter le port
         Runnable serverThread = () -> {
             try {
@@ -63,19 +64,32 @@ public class waitForDiscordMsg {
                             // On récupère le nom de la commande
                             String commandName = split2[1];
 
-                            if ("discordMsg".equals(commandName)) {// On récupère le message
-                                JSONObject json = (JSONObject) new JSONParser().parse(URLDecoder.decode(split2[2], "UTF-8"));
-                                String message = json.get("message").toString();
-                                String playerName = json.get("playerName").toString();
+                            switch (commandName) {
+                                case "discordMsg":
+                                    JSONObject json = (JSONObject) new JSONParser().parse(URLDecoder.decode(split2[2], "UTF-8"));
+                                    String message = json.get("message").toString();
+                                    String playerName = json.get("playerName").toString();
 
-                                // On envoie le message aux joueurs
-                                for (Player p : plugin.getServer().getOnlinePlayers()) {
-                                    p.sendMessage(ChatColor.DARK_PURPLE + playerName + ChatColor.WHITE + ": " + message);
-                                }
-                                plugin.getServer().getConsoleSender().sendMessage(ChatColor.DARK_PURPLE + playerName + ": " + message);
-                                out.print("Message envoyé !");
-                            } else {
-                                out.print("La commande \"" + commandName + "\" n'est pas reconnue.\r\n");
+                                    // On envoie le message aux joueurs
+                                    for (Player p : plugin.getServer().getOnlinePlayers()) {
+                                        p.sendMessage(ChatColor.DARK_PURPLE + playerName + ChatColor.WHITE + ": " + message);
+                                    }
+                                    plugin.getServer().getConsoleSender().sendMessage(ChatColor.DARK_PURPLE + playerName + ": " + message);
+                                    out.print("Message envoyé !");
+                                    break;
+                                case "getPlayers":
+                                    // On renvoie la liste des joueurs
+                                    JSONObject listToReturn = new JSONObject();
+                                    JSONArray players = new JSONArray();
+                                    for (Player p : plugin.getServer().getOnlinePlayers()) {
+                                        players.add(p.getName());
+                                    }
+                                    listToReturn.put("players", players);
+                                    out.print(listToReturn.toJSONString());
+                                    break;
+                                default:
+                                    out.print("La commande \"" + commandName + "\" n'est pas reconnue.\r\n");
+                                    break;
                             }
                         }
                     }

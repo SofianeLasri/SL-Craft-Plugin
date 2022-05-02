@@ -3,7 +3,7 @@ package com.slprojects.slcraftplugin;
 import com.slprojects.slcraftplugin.commandes.linkCodeCommand;
 import com.slprojects.slcraftplugin.commandes.wildCommand;
 import com.slprojects.slcraftplugin.tachesParalleles.savePlayerData;
-import com.slprojects.slcraftplugin.tachesParalleles.waitForDiscordMsg;
+import com.slprojects.slcraftplugin.tachesParalleles.internalWebServer;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -57,6 +57,7 @@ public final class Main extends JavaPlugin implements Listener {
         saveDefaultConfig();
         reloadConfig();
         config = getConfig();
+        updateConfig();
         savePlayerData = new savePlayerData(this);
 
         // On initialise la base de donnée
@@ -69,7 +70,7 @@ public final class Main extends JavaPlugin implements Listener {
         linkCodeCommand linkCodeCommand = new linkCodeCommand(this);
         Objects.requireNonNull(getCommand("getLinkCode")).setExecutor(linkCodeCommand);
 
-        waitForDiscordMsg.startServer(this);
+        internalWebServer.startServer(this);
 
         getServer().getConsoleSender().sendMessage(ChatColor.GREEN+"SL-Craft | Plugin démarré");
     }
@@ -96,8 +97,8 @@ public final class Main extends JavaPlugin implements Listener {
             if(getConfig().getBoolean("player-join-playSound")){
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0);
             }
-            //p.sendMessage(welcomeMessage);
         }
+        sendMessageToDiscord("**"+e.getPlayer().getName()+"** vient de rejoindre le serveur");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -109,28 +110,15 @@ public final class Main extends JavaPlugin implements Listener {
         for(Player p : getServer().getOnlinePlayers()){
             p.sendMessage(quitMessage);
         }
+        sendMessageToDiscord("**"+e.getPlayer().getName()+"** a quitté le serveur");
     }
 
     // On renvoie chaque message des joueurs sur le canal de chat du serveur discord
     @SuppressWarnings({"unchecked", "deprecation"})
     @EventHandler(priority = EventPriority.LOWEST)
     void AsyncChatEvent(AsyncPlayerChatEvent e) {
-        // On va appeler l'api du bot discord
-        JSONObject json = new JSONObject();
-        json.put("message", e.getMessage());
-        json.put("username", e.getPlayer().getName());
-
-        try {
-            String urlString = config.getString("discordBot-api-url") + "mc/chat/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
-
-            String response = getHttp(urlString);
-            if(getConfig().getBoolean("msg-verbose")){
-                getServer().getConsoleSender().sendMessage("Func AsyncChatEvent(PlayerChatEvent e), HTTP response:" + response);
-            }
-        } catch (UnsupportedEncodingException ex) {
-            getLogger().warning(ChatColor.RED + "Impossible de d'encoder les données. Func AsyncChatEvent(PlayerChatEvent e)");
-            ex.printStackTrace();
-        }
+        // On envoie le message sur discord
+        sendMessageToDiscord(e.getMessage(), e.getPlayer().getName());
     }
 
     // Permet de faire des appels vers l'api discord
@@ -164,11 +152,42 @@ public final class Main extends JavaPlugin implements Listener {
             con.disconnect();
             returnData = response.toString();
         } catch (Exception ex) {
-            getLogger().warning(ChatColor.RED + "Impossible de se connecter à l'url " + urlString + ". Func getHttp(String urlString)");
+            getServer().getConsoleSender().sendMessage(ChatColor.RED + "Impossible de se connecter à l'url " + urlString + ". Func getHttp(String urlString)");
             ex.printStackTrace();
         }
 
         return returnData;
+    }
+
+    // Envoyer un message sur le discord
+    @SuppressWarnings({"unchecked"})
+    public void sendMessageToDiscord(String message, String username){
+        // On va vérifier que le joueur ne fait pas de @everyone ou de @here
+        message = message.replace("<@everyone>", "**everyone**");
+        message = message.replace("<@here>", "**here**");
+        message = message.replace("@everyone", "**everyone**");
+        message = message.replace("@here", "**here**");
+
+        // On forme le JSON
+        JSONObject json = new JSONObject();
+        json.put("message", message);
+        json.put("username", username);
+
+        // On va appeler l'api du bot discord
+        try {
+            String urlString = config.getString("discordBot-api-url") + "mc/chat/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
+
+            String response = getHttp(urlString);
+            if(getConfig().getBoolean("msg-verbose")){
+                getServer().getConsoleSender().sendMessage("Func AsyncChatEvent(PlayerChatEvent e), HTTP response:" + response);
+            }
+        } catch (UnsupportedEncodingException ex) {
+            getLogger().warning(ChatColor.RED + "Impossible de d'encoder les données. Func AsyncChatEvent(PlayerChatEvent e)");
+            ex.printStackTrace();
+        }
+    }
+    public void sendMessageToDiscord(String message){
+        sendMessageToDiscord(message, "SL-Craft");
     }
 
     // Propre à la commande wild: évite les spams de la commande
@@ -196,7 +215,7 @@ public final class Main extends JavaPlugin implements Listener {
         try {
             Class.forName("org.mariadb.jdbc.MariaDbPoolDataSource");
         } catch (ClassNotFoundException e){
-            getLogger().warning (ChatColor.RED+"Il manque le driver MariaDB!");
+            getServer().getConsoleSender().sendMessage (ChatColor.RED+"Il manque le driver MariaDB!");
             getServer().getPluginManager().disablePlugin(this);
         }
         try {
@@ -205,10 +224,33 @@ public final class Main extends JavaPlugin implements Listener {
             //getLogger().info(ChatColor.GREEN+"Connexion à la base de données réussie!");
         }// ou les saisir
         catch (SQLException e) {
-            getLogger().warning(ChatColor.RED+"Erreur lors de la connexion à la base de données.");
+            getServer().getConsoleSender().sendMessage(ChatColor.RED+"Erreur lors de la connexion à la base de données.");
             getServer().getPluginManager().disablePlugin(this);
         }
         return conn;
+    }
+    
+    private void updateConfig(){
+        getLogger().info("Vérification du fichier de configuration...");
+        // On va vérifier si l'on dispose de la nouvelle variable du port du serveur web
+        if(config.contains("msg-server-port")){
+            getLogger().info("Mise à jour du paramètre 'internal-webserver-port'");
+            // Et on va regarder si on a l'ancienne en mémoire
+            if(config.contains("internal-webserver-port")){
+                // On va copier l'ancienne valeur dans la nouvelle
+                config.set("internal-webserver-port", config.getString("msg-server-port"));
+                // Et on va supprimer l'ancienne
+                config.set("msg-server-port", null);
+            }else{
+                // On va mettre la valeur par défaut
+                config.addDefault("internal-webserver-port", 25566);
+
+            }
+
+            config.options().copyDefaults(true);
+            saveConfig();
+            reloadConfig();
+        }
     }
 
     private void initDatabase(){
@@ -232,7 +274,7 @@ public final class Main extends JavaPlugin implements Listener {
             ps.executeQuery();
             con.close();
         }catch(Exception e){
-            getLogger().warning(ChatColor.RED+"Erreur lors de l'exécution de initDatabase(): "+e);
+            getServer().getConsoleSender().sendMessage(ChatColor.RED+"Erreur lors de l'exécution de initDatabase(): "+e);
         }
     }
 }
