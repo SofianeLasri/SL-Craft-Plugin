@@ -3,7 +3,6 @@ package com.slprojects.slcraftplugin.tachesParalleles;
 import com.slprojects.slcraftplugin.Main;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -27,13 +26,15 @@ public class internalWebServer {
                 while (true) {
                     Socket client = serverSocket.accept();
 
+                    //plugin.getServer().getConsoleSender().sendMessage("Nouvelle connexion sur le port " + ChatColor.GOLD + serverPort);
+
                     // Get input and output streams to talk to the client
                     BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
                     PrintWriter out = new PrintWriter(client.getOutputStream());
 
                     // Start sending our reply, using the HTTP 1.1 protocol
                     out.print("HTTP/1.1 200 \r\n"); // Version & status code
-                    out.print("Content-Type: text/plain\r\n"); // The type of data
+                    out.print("Content-Type: application/json\r\n"); // The type of data
                     out.print("Connection: close\r\n"); // Will close stream
                     out.print("\r\n"); // End of headers
 
@@ -64,6 +65,7 @@ public class internalWebServer {
                             // On récupère le nom de la commande
                             String commandName = split2[1];
 
+                            JSONObject answer = new JSONObject();
                             switch (commandName) {
                                 case "discordMsg":
                                     JSONObject json = (JSONObject) new JSONParser().parse(URLDecoder.decode(split2[2], "UTF-8"));
@@ -75,20 +77,33 @@ public class internalWebServer {
                                         p.sendMessage(ChatColor.DARK_PURPLE + playerName + ChatColor.WHITE + ": " + message);
                                     }
                                     plugin.getServer().getConsoleSender().sendMessage(ChatColor.DARK_PURPLE + playerName + ": " + message);
-                                    out.print("Message envoyé !");
+                                    answer.put("status", "ok");
+                                    out.print(answer.toJSONString());
                                     break;
                                 case "getPlayers":
+                                    plugin.getServer().getConsoleSender().sendMessage("getPlayers");
                                     // On renvoie la liste des joueurs
                                     JSONObject listToReturn = new JSONObject();
-                                    JSONArray players = new JSONArray();
-                                    for (Player p : plugin.getServer().getOnlinePlayers()) {
-                                        players.add(p.getName());
+                                    JSONObject players = new JSONObject();
+
+                                    // On vérifie qu'il y a des joueurs -> pas vraiment utile vu que le timeout ne viens pas d'ici
+                                    //TODO: Corriger le timeout et supprimer la condition
+                                    if( plugin.getServer().getOnlinePlayers().size() > 0 ) {
+                                        for (Player p : plugin.getServer().getOnlinePlayers()) {
+                                            JSONObject playerInfos = new JSONObject();
+                                            playerInfos.put("username", p.getName());
+                                            playerInfos.put("uuid", p.getUniqueId().toString());
+                                            players.put(p.getName(), playerInfos);
+                                        }
+
                                     }
                                     listToReturn.put("players", players);
                                     out.print(listToReturn.toJSONString());
                                     break;
                                 default:
-                                    out.print("La commande \"" + commandName + "\" n'est pas reconnue.\r\n");
+                                    answer.put("status", "error");
+                                    answer.put("message", "Commande "+commandName+" inconnue");
+                                    out.print(answer.toJSONString());
                                     break;
                             }
                         }
