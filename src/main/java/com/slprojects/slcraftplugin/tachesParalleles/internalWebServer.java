@@ -19,6 +19,7 @@ public class internalWebServer {
         int serverPort = plugin.getConfig().getInt("internal-webserver-port");
 
         plugin.getServer().getConsoleSender().sendMessage("Lancement du serveur web intégré sur le port " + ChatColor.GOLD + serverPort);
+        plugin.getServer().getConsoleSender().sendMessage(ChatColor.YELLOW + "Attention! Le serveur ne fonctionne pas avec les requêtes https!");
         // On fait un thread pour écouter le port
         Runnable serverThread = () -> {
             try {
@@ -46,13 +47,12 @@ public class internalWebServer {
                     // reading. This means we don't mirror the contents of POST
                     // requests, for example. Note that the readLine() method
                     // works with Unix, Windows, and Mac line terminators.
-                    String line;
+                    String line, commandName = "";
+                    String[] aliases = new String[0];
                     while ((line = in.readLine()) != null) {
-                        if (line.length() == 0)
+                        if (line.equals("")) {
                             break;
-                        //out.print(line + "\r\n");
-                        //plugin.getServer().getConsoleSender().sendMessage(line);
-
+                        }
                         // On va regarder si la ligne commence par GET
                         if (line.startsWith("GET")) {
                             // On split par les espaces
@@ -61,52 +61,49 @@ public class internalWebServer {
                             String command = split[1];
 
                             // On split par des /
-                            String[] split2 = command.split("/");
+                            aliases = command.split("/");
                             // On récupère le nom de la commande
-                            String commandName = split2[1];
-
-                            JSONObject answer = new JSONObject();
-                            switch (commandName) {
-                                case "discordMsg":
-                                    JSONObject json = (JSONObject) new JSONParser().parse(URLDecoder.decode(split2[2], "UTF-8"));
-                                    String message = json.get("message").toString();
-                                    String playerName = json.get("playerName").toString();
-
-                                    // On envoie le message aux joueurs
-                                    for (Player p : plugin.getServer().getOnlinePlayers()) {
-                                        p.sendMessage(ChatColor.DARK_PURPLE + playerName + ChatColor.WHITE + ": " + message);
-                                    }
-                                    plugin.getServer().getConsoleSender().sendMessage(ChatColor.DARK_PURPLE + playerName + ": " + message);
-                                    answer.put("status", "ok");
-                                    out.print(answer.toJSONString());
-                                    break;
-                                case "getPlayers":
-                                    plugin.getServer().getConsoleSender().sendMessage("getPlayers");
-                                    // On renvoie la liste des joueurs
-                                    JSONObject listToReturn = new JSONObject();
-                                    JSONObject players = new JSONObject();
-
-                                    // On vérifie qu'il y a des joueurs -> pas vraiment utile vu que le timeout ne viens pas d'ici
-                                    //TODO: Corriger le timeout et supprimer la condition
-                                    if( plugin.getServer().getOnlinePlayers().size() > 0 ) {
-                                        for (Player p : plugin.getServer().getOnlinePlayers()) {
-                                            JSONObject playerInfos = new JSONObject();
-                                            playerInfos.put("username", p.getName());
-                                            playerInfos.put("uuid", p.getUniqueId().toString());
-                                            players.put(p.getName(), playerInfos);
-                                        }
-
-                                    }
-                                    listToReturn.put("players", players);
-                                    out.print(listToReturn.toJSONString());
-                                    break;
-                                default:
-                                    answer.put("status", "error");
-                                    answer.put("message", "Commande "+commandName+" inconnue");
-                                    out.print(answer.toJSONString());
-                                    break;
-                            }
+                            commandName = aliases[1];
+                            // On ne process pas la commande ici car ça cause des problèmes vu qu'on va renvoyer le résultat avant que le client n'écoute
                         }
+                    }
+
+
+                    JSONObject answer = new JSONObject();
+                    switch (commandName) {
+                        case "discordMsg":
+                            JSONObject json = (JSONObject) new JSONParser().parse(URLDecoder.decode(aliases[2], "UTF-8"));
+                            String message = json.get("message").toString();
+                            String playerName = json.get("playerName").toString();
+
+                            // On envoie le message aux joueurs
+                            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                                p.sendMessage(ChatColor.DARK_PURPLE + playerName + ChatColor.WHITE + ": " + message);
+                            }
+                            plugin.getServer().getConsoleSender().sendMessage(ChatColor.DARK_PURPLE + playerName + ": " + message);
+                            answer.put("status", "ok");
+                            out.print(answer.toJSONString());
+                            break;
+                        case "getPlayers":
+                            // On renvoie la liste des joueurs
+                            JSONObject listToReturn = new JSONObject();
+                            JSONObject players = new JSONObject();
+
+                            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                                JSONObject playerInfos = new JSONObject();
+                                playerInfos.put("username", p.getName());
+                                playerInfos.put("uuid", p.getUniqueId().toString());
+                                players.put(p.getName(), playerInfos);
+                            }
+
+                            listToReturn.put("players", players);
+                            out.print(listToReturn.toJSONString());
+                            break;
+                        default:
+                            answer.put("status", "error");
+                            answer.put("message", "Commande "+commandName+" inconnue");
+                            out.print(answer.toJSONString());
+                            break;
                     }
 
                     // Close socket, breaking the connection to the client, and
