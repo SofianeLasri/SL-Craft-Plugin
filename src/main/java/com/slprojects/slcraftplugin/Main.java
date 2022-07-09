@@ -133,13 +133,23 @@ public final class Main extends JavaPlugin implements Listener {
         FinalMessage = Pattern.compile("\\*(.*?)\\*").matcher(FinalMessage).replaceAll("§o$1§r");
         //underline
         FinalMessage = Pattern.compile("__(.*?)__").matcher(FinalMessage).replaceAll("§n$1§r");
-        //underline
-        FinalMessage = Pattern.compile("~~(.*?)~~").matcher(FinalMessage).replaceAll("§m$1§r");
+        //barré
+        FinalMessage = Pattern.compile("~~(.*?)~~").matcher(FinalMessage).replaceAll("§m$1§r ");
 
 
         // On envoie le message sur discord
         sendMessageToDiscord(e.getMessage(), e.getPlayer().getName());
         for (Player p: Bukkit.getOnlinePlayers()) {
+            if(FinalMessage.toLowerCase().contains(p.getName().toLowerCase()) && (FinalMessage.charAt(FinalMessage.toLowerCase().indexOf(p.getName().toLowerCase())-1) != "@".charAt(0))){
+                //Simple coloration
+                int i = FinalMessage.indexOf(p.getName().toLowerCase());
+                FinalMessage = FinalMessage.substring(0, i) + "§b" + FinalMessage.substring(i) + "§r";
+            } else if (FinalMessage.toLowerCase().contains(p.getName().toLowerCase()) && FinalMessage.charAt(FinalMessage.toLowerCase().indexOf(p.getName().toLowerCase())-1) == "@".charAt(0)){
+                //Mention
+                FinalMessage = FinalMessage + " ";
+                FinalMessage = Pattern.compile("@(.*?) ").matcher(FinalMessage).replaceAll("§l§d@$1§r ");
+                FinalMessage = FinalMessage.substring(0,FinalMessage.length()-1);
+            }
             p.sendMessage(FinalMessage);
         }
         e.setCancelled(true);
