@@ -5,6 +5,7 @@ import com.slprojects.slcraftplugin.commandes.wildCommand;
 import com.slprojects.slcraftplugin.tachesParalleles.savePlayerData;
 import com.slprojects.slcraftplugin.tachesParalleles.internalWebServer;
 import me.clip.placeholderapi.PlaceholderAPI;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -33,6 +34,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class Main extends JavaPlugin implements Listener {
     // Variables
@@ -117,8 +120,39 @@ public final class Main extends JavaPlugin implements Listener {
     @SuppressWarnings({"unchecked", "deprecation"})
     @EventHandler(priority = EventPriority.LOWEST)
     void AsyncChatEvent(AsyncPlayerChatEvent e) {
+        // on formate le message sur discord
+        //on cherche un bold char "**"
+        Player gg = Bukkit.getPlayer("gagafeee");
+        //FinalMessage = e.getMessage().replace("*{", "§l");
+        String FinalMessage = e.getMessage();
+        //italique + gras "***"
+        FinalMessage = Pattern.compile("\\*\\*\\*(.*?)\\*\\*\\*").matcher(FinalMessage).replaceAll("§l§o$1§r");
+        //gras "**"
+        FinalMessage = Pattern.compile("\\*\\*(.*?)\\*\\*").matcher(FinalMessage).replaceAll("§l$1§r");
+        //italique "*"
+        FinalMessage = Pattern.compile("\\*(.*?)\\*").matcher(FinalMessage).replaceAll("§o$1§r");
+        //underline
+        FinalMessage = Pattern.compile("__(.*?)__").matcher(FinalMessage).replaceAll("§n$1§r");
+        //barré
+        FinalMessage = Pattern.compile("~~(.*?)~~").matcher(FinalMessage).replaceAll("§m$1§r ");
+
+
         // On envoie le message sur discord
         sendMessageToDiscord(e.getMessage(), e.getPlayer().getName());
+        for (Player p: Bukkit.getOnlinePlayers()) {
+            if(FinalMessage.toLowerCase().contains(p.getName().toLowerCase()) && (FinalMessage.charAt(FinalMessage.toLowerCase().indexOf(p.getName().toLowerCase())-1) != "@".charAt(0))){
+                //Simple coloration
+                int i = FinalMessage.indexOf(p.getName().toLowerCase());
+                FinalMessage = FinalMessage.substring(0, i) + "§b" + FinalMessage.substring(i) + "§r";
+            } else if (FinalMessage.toLowerCase().contains(p.getName().toLowerCase()) && FinalMessage.charAt(FinalMessage.toLowerCase().indexOf(p.getName().toLowerCase())-1) == "@".charAt(0)){
+                //Mention
+                FinalMessage = FinalMessage + " ";
+                FinalMessage = Pattern.compile("@(.*?) ").matcher(FinalMessage).replaceAll("§l§d@$1§r ");
+                FinalMessage = FinalMessage.substring(0,FinalMessage.length()-1);
+            }
+            p.sendMessage(FinalMessage);
+        }
+        e.setCancelled(true);
     }
 
     // Permet de faire des appels vers l'api discord
