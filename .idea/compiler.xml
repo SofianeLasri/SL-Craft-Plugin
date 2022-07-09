@@ -6,6 +6,7 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="sl-craft-plugin" />
         <module name="SLCraftPlugin" />
         <module name="SL-Craft Plugin" />
       </profile>
