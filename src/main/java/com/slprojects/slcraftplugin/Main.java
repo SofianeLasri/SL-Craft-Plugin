@@ -156,6 +156,7 @@ public final class Main extends JavaPlugin implements Listener {
             con.setRequestProperty("User-Agent", "Mozilla/5.0");
             con.setRequestProperty("Accept-Language", "fr-FR,fr;q=0.5");
             con.setRequestProperty("Content-Type", "application/json");
+            con.setRequestProperty("Server-Type", config.getString("server-type"));
             con.setDoOutput(true);
             con.setDoInput(true);
             con.setUseCaches(false);
@@ -257,19 +258,9 @@ public final class Main extends JavaPlugin implements Listener {
     private void updateConfig(){
         getLogger().info("Vérification du fichier de configuration...");
         // On va vérifier si l'on dispose de la nouvelle variable du port du serveur web
-        if(config.contains("msg-server-port")){
-            getLogger().info("Mise à jour du paramètre 'internal-webserver-port'");
-            // Et on va regarder si on a l'ancienne en mémoire
-            if(config.contains("internal-webserver-port")){
-                // On va copier l'ancienne valeur dans la nouvelle
-                config.set("internal-webserver-port", config.getString("msg-server-port"));
-                // Et on va supprimer l'ancienne
-                config.set("msg-server-port", null);
-            }else{
-                // On va mettre la valeur par défaut
-                config.addDefault("internal-webserver-port", 25566);
-
-            }
+        if(!config.contains("serverType")){
+            getLogger().info("Ajout de la variable serverType dans le fichier de configuration...");
+            config.set("server-type", "dev");
 
             config.options().copyDefaults(true);
             saveConfig();
