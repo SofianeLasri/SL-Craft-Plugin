@@ -5,6 +5,8 @@ import com.slprojects.slcraftplugin.commandes.wildCommand;
 import com.slprojects.slcraftplugin.tachesParalleles.savePlayerData;
 import com.slprojects.slcraftplugin.tachesParalleles.internalWebServer;
 import me.clip.placeholderapi.PlaceholderAPI;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -138,19 +140,30 @@ public final class Main extends JavaPlugin implements Listener {
 
 
         // On envoie le message sur discord
-        sendMessageToDiscord(e.getMessage(), e.getPlayer().getName());
+
         for (Player p: Bukkit.getOnlinePlayers()) {
-            if(FinalMessage.toLowerCase().contains(p.getName().toLowerCase()) && (FinalMessage.charAt(FinalMessage.toLowerCase().indexOf(p.getName().toLowerCase())-1) != "@".charAt(0))){
-                //Simple coloration
-                int i = FinalMessage.indexOf(p.getName().toLowerCase());
-                FinalMessage = FinalMessage.substring(0, i) + "§b" + FinalMessage.substring(i) + "§r";
-            } else if (FinalMessage.toLowerCase().contains(p.getName().toLowerCase()) && FinalMessage.charAt(FinalMessage.toLowerCase().indexOf(p.getName().toLowerCase())-1) == "@".charAt(0)){
-                //Mention
-                FinalMessage = FinalMessage + " ";
-                FinalMessage = Pattern.compile("@(.*?) ").matcher(FinalMessage).replaceAll("§l§d@$1§r ");
-                FinalMessage = FinalMessage.substring(0,FinalMessage.length()-1);
+            //Simple coloration
+            FinalMessage = FinalMessage.replace(e.getPlayer().getName(),"§b" + e.getPlayer().getName());
+            while (FinalMessage.contains("@") && (FinalMessage.charAt(FinalMessage.indexOf("@")-1 )!= "b".charAt(0))){
+                gg.sendMessage("while");
+                if (FinalMessage.toLowerCase().contains(p.getName().toLowerCase()) && FinalMessage.charAt(FinalMessage.toLowerCase().indexOf(p.getName().toLowerCase())-1) == "@".charAt(0)){
+                    //Mention
+                    FinalMessage = FinalMessage + " ";
+
+                    String pseudo = FinalMessage.substring(FinalMessage.indexOf("@")+1);
+                    pseudo = pseudo.substring(0,pseudo.charAt(pseudo.indexOf(" ")-1) == " ".charAt(0) ? pseudo.indexOf(" ") : pseudo.charAt(pseudo.indexOf(" ")-1) == ",".charAt(0) ? pseudo.indexOf(",") : pseudo.charAt(pseudo.indexOf(" ")-1) == ".".charAt(0) ? pseudo.indexOf(".") : 0);
+                    Player MentionedPlayer = Bukkit.getPlayer(pseudo);
+                    FinalMessage = Pattern.compile("@(.*?) ").matcher(FinalMessage).replaceAll("§r§l§d@$1§r ");
+                    FinalMessage = FinalMessage.substring(0,FinalMessage.length()-1);
+                    MentionedPlayer.sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b " + e.getPlayer().getName() + " §amentioned you !"));
+                    MentionedPlayer.playSound(MentionedPlayer.getLocation(),Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100, 2);
+                    gg.sendMessage("true " + FinalMessage);
+                }
             }
+
+
             p.sendMessage(FinalMessage);
+            sendMessageToDiscord(FinalMessage, e.getPlayer().getName());
         }
         e.setCancelled(true);
     }
