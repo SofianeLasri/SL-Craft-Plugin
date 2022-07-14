@@ -1,3 +1,7 @@
 
 target/SLCraftPlugin-1.6.0.jar
 *.jar
+target/SLCraftPlugin-1.6.0.jar
+target/original-SLCraftPlugin-1.6.0.jar
+target/maven-archiver/pom.properties
+target/classes/com/slprojects/slcraftplugin/Main.class
