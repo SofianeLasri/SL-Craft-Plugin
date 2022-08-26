@@ -59,7 +59,7 @@ public final class Main extends JavaPlugin implements Listener {
             // On initialise les listeners
             getServer().getPluginManager().registerEvents(this, this);
         } else {
-            getServer().getConsoleSender().sendMessage(ChatColor.RED+"[\"+ this.getName() +\"] PlaceholderAPI n'est pas accessible!");
+            getServer().getConsoleSender().sendMessage(ChatColor.RED+"["+ this.getName() +"] PlaceholderAPI n'est pas accessible!");
             getServer().getPluginManager().disablePlugin(this);
         }
 
@@ -89,12 +89,11 @@ public final class Main extends JavaPlugin implements Listener {
         // On initialise la base de donnée
         initDatabase();
 
-        wildCommandActiveUsers = new ArrayList<>();
         wildCommand wildCommand = new wildCommand(this);
-        Objects.requireNonNull(getCommand("wild")).setExecutor(wildCommand);
+        getCommand("wild").setExecutor(wildCommand);
 
         linkCodeCommand linkCodeCommand = new linkCodeCommand(this);
-        Objects.requireNonNull(getCommand("getLinkCode")).setExecutor(linkCodeCommand);
+        getCommand("getLinkCode").setExecutor(linkCodeCommand);
 
         internalWebServer.startServer(this);
 
@@ -268,26 +267,6 @@ public final class Main extends JavaPlugin implements Listener {
         sendMessageToDiscord(message, "SL-Craft");
     }
 
-    // Propre à la commande wild: évite les spams de la commande
-    public boolean checkActiveUserForWildCommand(UUID playerUuid){
-        if(wildCommandActiveUsers.contains(playerUuid)){
-            return false;
-        }else{
-            wildCommandActiveUsers.add(playerUuid);
-            return true;
-        }
-    }
-    public void removeActiveUserForWildCommand(UUID playerUuid){
-        if(wildCommandActiveUsers.contains(playerUuid)){
-            try {
-                TimeUnit.SECONDS.sleep(5);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            wildCommandActiveUsers.remove(playerUuid);
-        }
-    }
-
     public Connection bddOpenConn() { // si mot de passe avec des caractère spéciaux
         Connection conn=null;
         try {
@@ -310,10 +289,25 @@ public final class Main extends JavaPlugin implements Listener {
     
     private void updateConfig(){
         getLogger().info("Vérification du fichier de configuration...");
-        // On va vérifier si l'on dispose de la nouvelle variable du port du serveur web
+        // 1.6.0
         if(!config.contains("server-type")){
             getLogger().info("Ajout de la variable serverType dans le fichier de configuration...");
             config.set("server-type", "dev");
+
+            saveConfig();
+            reloadConfig();
+        }
+
+        if(config.contains("wild") && (config.contains("excluded-biomes") && config.contains("world") && config.contains("max-range"))){
+            getLogger().info("Mise à jour des paramètres concernant la commande /wild");
+
+            config.set("wild.excluded-biomes", config.get("excluded-biomes"));
+            config.set("wild.world", config.get("world"));
+            config.set("wild.max-range", config.get("max-range"));
+
+            config.set("excluded-biomes", null);
+            config.set("world", null);
+            config.set("max-range", null);
 
             config.options().copyDefaults(true);
             saveConfig();

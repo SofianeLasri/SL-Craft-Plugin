@@ -61,7 +61,7 @@ public class savePlayerData {
         try {
             con.close();
         } catch (SQLException e) {
-            plugin.getLogger().warning(ChatColor.RED + "Impossible de fermer la connexion à la bdd. Func savePlayerData::saveOnQuit(Player player)");
+            plugin.getLogger().warning("Impossible de fermer la connexion à la bdd. Func savePlayerData::saveOnQuit(Player player)");
             e.printStackTrace();
         }
     }

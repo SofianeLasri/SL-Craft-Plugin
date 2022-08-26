@@ -1,19 +1,22 @@
 # /wild
-excluded-biomes:
-  - cold_ocean
-  - deep_cold_ocean
-  - deep_frozen_ocean
-  - deep_lukewarm_ocean
-  - deep_ocean
-  - deep_warm_ocean
-  - frozen_ocean
-  - frozen_river
-  - lukewarm_ocean
-  - ocean
-  - river
-  - warm_ocean
-world: survie
-max-range: 20000 #14500 -> 1.17, 10000 -> 1.16
+wild:
+  excluded-biomes:
+    - cold_ocean
+    - deep_cold_ocean
+    - deep_frozen_ocean
+    - deep_lukewarm_ocean
+    - deep_ocean
+    - frozen_ocean
+    - frozen_river
+    - lukewarm_ocean
+    - ocean
+    - river
+    - warm_ocean
+  world: survie
+  max-range: 20000 #14500 -> 1.17, 10000 -> 1.16
+  usage-cooldown: 30
+  move-cooldown: 5
+  usage-per-day: 5
 
 # Configuration de la base de donnée
 database:
