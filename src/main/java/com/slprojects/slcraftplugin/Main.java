@@ -125,16 +125,16 @@ public final class Main extends JavaPlugin implements Listener {
     void AsyncChatEvent(AsyncPlayerChatEvent e) {
         String FinalMessage = e.getMessage();
         //on applique les text markup
-            //italique + gras "***"
-            FinalMessage = Pattern.compile("\\*\\*\\*(.*?)\\*\\*\\*").matcher(FinalMessage).replaceAll("§l§o$1§r");
-            //gras "**"
-            FinalMessage = Pattern.compile("\\*\\*(.*?)\\*\\*").matcher(FinalMessage).replaceAll("§l$1§r");
-            //italique "*"
-            FinalMessage = Pattern.compile("\\*(.*?)\\*").matcher(FinalMessage).replaceAll("§o$1§r");
-            //underline
-            FinalMessage = Pattern.compile("__(.*?)__").matcher(FinalMessage).replaceAll("§n$1§r");
-            //barré
-            FinalMessage = Pattern.compile("~~(.*?)~~").matcher(FinalMessage).replaceAll("§m$1§r ");
+        //italique + gras "***"
+        FinalMessage = Pattern.compile("\\*\\*\\*(.*?)\\*\\*\\*").matcher(FinalMessage).replaceAll("§l§o$1§r");
+        //gras "**"
+        FinalMessage = Pattern.compile("\\*\\*(.*?)\\*\\*").matcher(FinalMessage).replaceAll("§l$1§r");
+        //italique "*"
+        FinalMessage = Pattern.compile("\\*(.*?)\\*").matcher(FinalMessage).replaceAll("§o$1§r");
+        //underline
+        FinalMessage = Pattern.compile("__(.*?)__").matcher(FinalMessage).replaceAll("§n$1§r");
+        //barré
+        FinalMessage = Pattern.compile("~~(.*?)~~").matcher(FinalMessage).replaceAll("§m$1§r ");
 
 
         //on poste le message aux joueurs 1 par 1
@@ -147,7 +147,7 @@ public final class Main extends JavaPlugin implements Listener {
                 //On colorise sa mention
                 FinalMessage = Pattern.compile("@(" + p.getName() + ")($|[ ,;:!])").matcher(FinalMessage).replaceAll("§r§l§d@$1§r$2");
                 //on lui joue un son + un texte dans la barre d'action
-                p.sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b " + e.getPlayer().getName() + " §amentioned you !"));
+                p.sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b " + e.getPlayer().getName() + " §aVous a mentionné !"));
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100, 2);
                 //on colorie les autres mentions
                 FinalMessage = Pattern.compile(" @(.*?)($|[ ,;:!])").matcher(FinalMessage).replaceAll("§r§b @$1§r$2");
