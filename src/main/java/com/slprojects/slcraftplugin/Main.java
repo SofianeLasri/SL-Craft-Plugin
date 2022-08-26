@@ -5,6 +5,8 @@ import com.slprojects.slcraftplugin.commandes.wildCommand;
 import com.slprojects.slcraftplugin.tachesParalleles.savePlayerData;
 import com.slprojects.slcraftplugin.tachesParalleles.internalWebServer;
 import me.clip.placeholderapi.PlaceholderAPI;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -34,6 +36,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -120,11 +123,8 @@ public final class Main extends JavaPlugin implements Listener {
     @SuppressWarnings({"unchecked", "deprecation"})
     @EventHandler(priority = EventPriority.LOWEST)
     void AsyncChatEvent(AsyncPlayerChatEvent e) {
-        // on formate le message sur discord
-        //on cherche un bold char "**"
-        Player gg = Bukkit.getPlayer("gagafeee");
-        //FinalMessage = e.getMessage().replace("*{", "§l");
         String FinalMessage = e.getMessage();
+        //on applique les text markup
         //italique + gras "***"
         FinalMessage = Pattern.compile("\\*\\*\\*(.*?)\\*\\*\\*").matcher(FinalMessage).replaceAll("§l§o$1§r");
         //gras "**"
@@ -137,21 +137,32 @@ public final class Main extends JavaPlugin implements Listener {
         FinalMessage = Pattern.compile("~~(.*?)~~").matcher(FinalMessage).replaceAll("§m$1§r ");
 
 
-        // On envoie le message sur discord
-        sendMessageToDiscord(e.getMessage(), e.getPlayer().getName());
-        for (Player p: Bukkit.getOnlinePlayers()) {
-            if(FinalMessage.toLowerCase().contains(p.getName().toLowerCase()) && (FinalMessage.charAt(FinalMessage.toLowerCase().indexOf(p.getName().toLowerCase())-1) != "@".charAt(0))){
-                //Simple coloration
-                int i = FinalMessage.indexOf(p.getName().toLowerCase());
-                FinalMessage = FinalMessage.substring(0, i) + "§b" + FinalMessage.substring(i) + "§r";
-            } else if (FinalMessage.toLowerCase().contains(p.getName().toLowerCase()) && FinalMessage.charAt(FinalMessage.toLowerCase().indexOf(p.getName().toLowerCase())-1) == "@".charAt(0)){
-                //Mention
-                FinalMessage = FinalMessage + " ";
-                FinalMessage = Pattern.compile("@(.*?) ").matcher(FinalMessage).replaceAll("§l§d@$1§r ");
-                FinalMessage = FinalMessage.substring(0,FinalMessage.length()-1);
+        //on poste le message aux joueurs 1 par 1
+        for (Player p: Bukkit.getOnlinePlayers()){
+            Matcher m = Pattern.compile("@(.*?)($|[ ,;:!])").matcher(FinalMessage);
+            List<String> list = new ArrayList<>();
+            while (m.find()) {list.add(m.group(1));}
+            // si le joueur a qui on va poster le message (p) a été mentionné
+            if(list.contains(p.getName())){
+                //On colorise sa mention
+                FinalMessage = Pattern.compile("@(" + p.getName() + ")($|[ ,;:!])").matcher(FinalMessage).replaceAll("§r§l§d@$1§r$2");
+                //on lui joue un son + un texte dans la barre d'action
+                p.sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b " + e.getPlayer().getName() + " §aVous a mentionné !"));
+                p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100, 2);
+                //on colorie les autres mentions
+                FinalMessage = Pattern.compile(" @(.*?)($|[ ,;:!])").matcher(FinalMessage).replaceAll("§r§b @$1§r$2");
+
             }
-            p.sendMessage(FinalMessage);
+            //on ajoute le préfix (Admin|Joueur) puis le pseudo du joueur qui envoie le message
+            String CompleteMessage = "§3[" + (e.getPlayer().isOp() ? "§dAdmin" : "§bPlayer") + "§3] §a" + e.getPlayer().getName() + "§r: " + FinalMessage;
+            //on envoie le message au joueur
+            p.sendMessage(CompleteMessage);
+
+
         }
+        //on envoie le message sur discord (on envoie le msg sans les couleur ni le formatage)
+        sendMessageToDiscord(e.getMessage(), e.getPlayer().getName());
+        //on désactive le message de base de minecraft
         e.setCancelled(true);
     }
 
