@@ -35,4 +35,4 @@ msg-verbose: false
 discordBot-api-url: "http://node.sl-projects.com:27001/"
 
 # Config générale
-server-type: dev
+server-type: prod # prod/dev

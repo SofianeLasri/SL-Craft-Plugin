@@ -143,22 +143,25 @@ public final class Main extends JavaPlugin implements Listener {
     @SuppressWarnings({"unchecked", "deprecation"})
     @EventHandler(priority = EventPriority.LOWEST)
     void AsyncChatEvent(AsyncPlayerChatEvent e) {
-        String playerMessage = e.getMessage();
-        //on applique les text markup
+        String playerFormattedMessage = e.getMessage();
+        // On applique les text markup
+        // Markdown
         //italique + gras "***"
-        playerMessage = Pattern.compile("\\*\\*\\*(.*?)\\*\\*\\*").matcher(playerMessage).replaceAll("§l§o$1§r");
+        playerFormattedMessage = Pattern.compile("\\*\\*\\*(.*?)\\*\\*\\*").matcher(playerFormattedMessage).replaceAll("§l§o$1§r");
         //gras "**"
-        playerMessage = Pattern.compile("\\*\\*(.*?)\\*\\*").matcher(playerMessage).replaceAll("§l$1§r");
+        playerFormattedMessage = Pattern.compile("\\*\\*(.*?)\\*\\*").matcher(playerFormattedMessage).replaceAll("§l$1§r");
         //italique "*"
-        playerMessage = Pattern.compile("\\*(.*?)\\*").matcher(playerMessage).replaceAll("§o$1§r");
+        playerFormattedMessage = Pattern.compile("\\*(.*?)\\*").matcher(playerFormattedMessage).replaceAll("§o$1§r");
         //underline
-        playerMessage = Pattern.compile("__(.*?)__").matcher(playerMessage).replaceAll("§n$1§r");
+        playerFormattedMessage = Pattern.compile("__(.*?)__").matcher(playerFormattedMessage).replaceAll("§n$1§r");
         //barré
-        playerMessage = Pattern.compile("~~(.*?)~~").matcher(playerMessage).replaceAll("§m$1§r ");
+        playerFormattedMessage = Pattern.compile("~~(.*?)~~").matcher(playerFormattedMessage).replaceAll("§m$1§r ");
 
+        // Couleurs
+        playerFormattedMessage = Pattern.compile("&([a-f]|r|[0-8])").matcher(playerFormattedMessage).replaceAll("§$1");
 
         // Ping utilisateur
-        Matcher m = Pattern.compile("@(.*?)($|[ ,;:!])").matcher(playerMessage);
+        Matcher m = Pattern.compile("@(.*?)($|[ ,;:!])").matcher(playerFormattedMessage);
         List<String> playerTags = new ArrayList<>();
         while (m.find()) {
             playerTags.add(m.group(1));
@@ -170,22 +173,28 @@ public final class Main extends JavaPlugin implements Listener {
             // Si le joueur a qui on va poster le message (p) a été mentionné
             if(playerTags.contains(p.getName())){
                 // On colorise sa mention
-                playerMessage = Pattern.compile("@(" + p.getName() + ")($|[ ,;:!])").matcher(playerMessage).replaceAll("§r§l§d@$1§r$2");
+                playerFormattedMessage = Pattern.compile("@(" + p.getName() + ")($|[ ,;:!])").matcher(playerFormattedMessage).replaceAll("§r§l§d@$1§r$2");
 
                 // On lui joue un son + un texte dans la barre d'action
                 p.sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b " + e.getPlayer().getName() + " §aVous a mentionné !"));
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100, 2);
                 // On colorie les autres mentions
-                playerMessage = Pattern.compile(" @(.*?)($|[ ,;:!])").matcher(playerMessage).replaceAll("§r§b @$1§r$2");
+                playerFormattedMessage = Pattern.compile(" @(.*?)($|[ ,;:!])").matcher(playerFormattedMessage).replaceAll("§r§b @$1§r$2");
             }
 
-            String CompleteMessage = playerMetaData.getPrefix() + e.getPlayer().getName() + "§r: " + playerMessage;
+            String CompleteMessage = playerMetaData.getPrefix() + e.getPlayer().getName() + "§r: " + playerFormattedMessage;
             // On envoie le message au joueur
             p.sendMessage(CompleteMessage);
+
+            // Et dans la console
+            if(e.getPlayer() == p){
+                getServer().getConsoleSender().sendMessage(CompleteMessage);
+            }
         }
-        //on envoie le message sur discord (on envoie le msg sans les couleur ni le formatage)
-        sendMessageToDiscord(e.getMessage(), e.getPlayer().getName());
-        //on désactive le message de base de minecraft
+        // On envoie le message sur discord (on envoie le msg sans les couleur ni le formatage)
+        String discordFriendlyMsg = Pattern.compile("&([a-f]|r|[0-8])").matcher(e.getMessage()).replaceAll("");
+        sendMessageToDiscord(discordFriendlyMsg, e.getPlayer().getName());
+        // On désactive le message de base de minecraft
         e.setCancelled(true);
     }
 
