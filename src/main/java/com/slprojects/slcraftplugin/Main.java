@@ -5,6 +5,8 @@ import com.slprojects.slcraftplugin.commandes.wildCommand;
 import com.slprojects.slcraftplugin.tachesParalleles.savePlayerData;
 import com.slprojects.slcraftplugin.tachesParalleles.internalWebServer;
 import me.clip.placeholderapi.PlaceholderAPI;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.cacheddata.CachedMetaData;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -18,6 +20,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.json.simple.JSONObject;
 import org.mariadb.jdbc.MariaDbPoolDataSource;
@@ -44,6 +47,7 @@ public final class Main extends JavaPlugin implements Listener {
     // Variables
     private List<UUID> wildCommandActiveUsers;
     private static FileConfiguration config;
+    private static LuckPerms luckPermsApi;
     private com.slprojects.slcraftplugin.tachesParalleles.savePlayerData savePlayerData;
 
     // Fonctions appelées à des évènements clés
@@ -51,11 +55,27 @@ public final class Main extends JavaPlugin implements Listener {
     public void onEnable() {
         // On s'assure qu'on a placeholder api
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            getServer().getConsoleSender().sendMessage("PlaceholderAPI chargé");
+            getLogger().info("PlaceholderAPI chargé");
             // On initialise les listeners
             getServer().getPluginManager().registerEvents(this, this);
         } else {
-            getServer().getConsoleSender().sendMessage(ChatColor.RED+"PlaceholderAPI n'est pas accessible!");
+            getServer().getConsoleSender().sendMessage(ChatColor.RED+"[\"+ this.getName() +\"] PlaceholderAPI n'est pas accessible!");
+            getServer().getPluginManager().disablePlugin(this);
+        }
+
+        // LuckPerms
+        // S'assure que le plugin est installé et évite l'affichage d'une erreur de classe inaccessible
+        if (getServer().getPluginManager().getPlugin("LuckPerms") != null) {
+            RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
+            if (provider != null) {
+                getLogger().info("LuckPerms chargé");
+                luckPermsApi = provider.getProvider();
+            }else{
+                getServer().getConsoleSender().sendMessage(ChatColor.RED+"["+ this.getName() +"] LuckPerms n'est pas accessible!");
+                getServer().getPluginManager().disablePlugin(this);
+            }
+        } else {
+            getServer().getConsoleSender().sendMessage(ChatColor.RED+"["+ this.getName() +"] LuckPerms n'est pas accessible!");
             getServer().getPluginManager().disablePlugin(this);
         }
 
@@ -123,42 +143,45 @@ public final class Main extends JavaPlugin implements Listener {
     @SuppressWarnings({"unchecked", "deprecation"})
     @EventHandler(priority = EventPriority.LOWEST)
     void AsyncChatEvent(AsyncPlayerChatEvent e) {
-        String FinalMessage = e.getMessage();
+        String playerMessage = e.getMessage();
         //on applique les text markup
         //italique + gras "***"
-        FinalMessage = Pattern.compile("\\*\\*\\*(.*?)\\*\\*\\*").matcher(FinalMessage).replaceAll("§l§o$1§r");
+        playerMessage = Pattern.compile("\\*\\*\\*(.*?)\\*\\*\\*").matcher(playerMessage).replaceAll("§l§o$1§r");
         //gras "**"
-        FinalMessage = Pattern.compile("\\*\\*(.*?)\\*\\*").matcher(FinalMessage).replaceAll("§l$1§r");
+        playerMessage = Pattern.compile("\\*\\*(.*?)\\*\\*").matcher(playerMessage).replaceAll("§l$1§r");
         //italique "*"
-        FinalMessage = Pattern.compile("\\*(.*?)\\*").matcher(FinalMessage).replaceAll("§o$1§r");
+        playerMessage = Pattern.compile("\\*(.*?)\\*").matcher(playerMessage).replaceAll("§o$1§r");
         //underline
-        FinalMessage = Pattern.compile("__(.*?)__").matcher(FinalMessage).replaceAll("§n$1§r");
+        playerMessage = Pattern.compile("__(.*?)__").matcher(playerMessage).replaceAll("§n$1§r");
         //barré
-        FinalMessage = Pattern.compile("~~(.*?)~~").matcher(FinalMessage).replaceAll("§m$1§r ");
+        playerMessage = Pattern.compile("~~(.*?)~~").matcher(playerMessage).replaceAll("§m$1§r ");
 
 
-        //on poste le message aux joueurs 1 par 1
+        // Ping utilisateur
+        Matcher m = Pattern.compile("@(.*?)($|[ ,;:!])").matcher(playerMessage);
+        List<String> playerTags = new ArrayList<>();
+        while (m.find()) {
+            playerTags.add(m.group(1));
+        }
+        // On va chercher le préfix dans LuckPerms
+        CachedMetaData playerMetaData = luckPermsApi.getPlayerAdapter(Player.class).getMetaData(e.getPlayer());
+
         for (Player p: Bukkit.getOnlinePlayers()){
-            Matcher m = Pattern.compile("@(.*?)($|[ ,;:!])").matcher(FinalMessage);
-            List<String> list = new ArrayList<>();
-            while (m.find()) {list.add(m.group(1));}
-            // si le joueur a qui on va poster le message (p) a été mentionné
-            if(list.contains(p.getName())){
-                //On colorise sa mention
-                FinalMessage = Pattern.compile("@(" + p.getName() + ")($|[ ,;:!])").matcher(FinalMessage).replaceAll("§r§l§d@$1§r$2");
-                //on lui joue un son + un texte dans la barre d'action
+            // Si le joueur a qui on va poster le message (p) a été mentionné
+            if(playerTags.contains(p.getName())){
+                // On colorise sa mention
+                playerMessage = Pattern.compile("@(" + p.getName() + ")($|[ ,;:!])").matcher(playerMessage).replaceAll("§r§l§d@$1§r$2");
+
+                // On lui joue un son + un texte dans la barre d'action
                 p.sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b " + e.getPlayer().getName() + " §aVous a mentionné !"));
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100, 2);
-                //on colorie les autres mentions
-                FinalMessage = Pattern.compile(" @(.*?)($|[ ,;:!])").matcher(FinalMessage).replaceAll("§r§b @$1§r$2");
-
+                // On colorie les autres mentions
+                playerMessage = Pattern.compile(" @(.*?)($|[ ,;:!])").matcher(playerMessage).replaceAll("§r§b @$1§r$2");
             }
-            //on ajoute le préfix (Admin|Joueur) puis le pseudo du joueur qui envoie le message
-            String CompleteMessage = "§3[" + (e.getPlayer().isOp() ? "§dAdmin" : "§bPlayer") + "§3] §a" + e.getPlayer().getName() + "§r: " + FinalMessage;
-            //on envoie le message au joueur
+
+            String CompleteMessage = playerMetaData.getPrefix() + e.getPlayer().getName() + "§r: " + playerMessage;
+            // On envoie le message au joueur
             p.sendMessage(CompleteMessage);
-
-
         }
         //on envoie le message sur discord (on envoie le msg sans les couleur ni le formatage)
         sendMessageToDiscord(e.getMessage(), e.getPlayer().getName());
@@ -279,7 +302,7 @@ public final class Main extends JavaPlugin implements Listener {
     private void updateConfig(){
         getLogger().info("Vérification du fichier de configuration...");
         // On va vérifier si l'on dispose de la nouvelle variable du port du serveur web
-        if(!config.contains("serverType")){
+        if(!config.contains("server-type")){
             getLogger().info("Ajout de la variable serverType dans le fichier de configuration...");
             config.set("server-type", "dev");
 
