@@ -157,9 +157,11 @@ public final class Main extends JavaPlugin implements Listener {
             String CompleteMessage = "§3[" + (e.getPlayer().isOp() ? "§dAdmin" : "§bPlayer") + "§3] §a" + e.getPlayer().getName() + "§r: " + FinalMessage;
             //on envoie le message au joueur
             p.sendMessage(CompleteMessage);
-            //on envoie le message sur discord (on envoie le msg sans les couleur ni le formatage)
-            sendMessageToDiscord(e.getMessage(), e.getPlayer().getName());
+
+
         }
+        //on envoie le message sur discord (on envoie le msg sans les couleur ni le formatage)
+        sendMessageToDiscord(e.getMessage(), e.getPlayer().getName());
         //on désactive le message de base de minecraft
         e.setCancelled(true);
     }
