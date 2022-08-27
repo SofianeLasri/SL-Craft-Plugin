@@ -1,4 +1,4 @@
-package com.slprojects.slcraftplugin.tachesParalleles;
+package com.slprojects.slcraftplugin.parallelTasks;
 
 import com.slprojects.slcraftplugin.Main;
 import org.bukkit.ChatColor;

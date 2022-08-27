@@ -1,4 +1,4 @@
-package com.slprojects.slcraftplugin.commandes;
+package com.slprojects.slcraftplugin.commands.publics;
 
 import com.slprojects.slcraftplugin.Main;
 import org.bukkit.Bukkit;
@@ -19,7 +19,7 @@ import java.util.*;
 
 import static java.lang.Math.abs;
 
-public class wildCommand implements CommandExecutor {
+public class wild implements CommandExecutor {
 
     // Variables
     private final Main plugin;
@@ -31,7 +31,7 @@ public class wildCommand implements CommandExecutor {
     private final int usageCooldown;
     private final int usagePerDay;
 
-    public wildCommand(Main plugin){
+    public wild(Main plugin){
         // On récupère la classe parente pour les paramètres
         this.plugin = plugin;
         wildUsersIndexes = new ArrayList<>();
@@ -45,7 +45,6 @@ public class wildCommand implements CommandExecutor {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         // On vérifie que la commande a bien été lancée par un joueur
         if (sender instanceof Player) {
@@ -54,28 +53,20 @@ public class wildCommand implements CommandExecutor {
             int playerIndex;
             LocalDateTime dateTimeNow = LocalDateTime.now();
 
-            if(wildUsersIndexes.contains(playerUUID)){
-                playerIndex = wildUsersIndexes.indexOf(playerUUID);
+            playerIndex = wildUsersIndexes.indexOf(playerUUID);
 
-                if(abs(ChronoUnit.SECONDS.between(wildUsersLastAsked.get(playerIndex), dateTimeNow)) > usageCooldown){
-                    if(wildUsersAskNum.get(playerIndex) < usagePerDay){
-                        wildUsersLastAsked.set(playerIndex, dateTimeNow);
-                        wildUsersStartLocation.set(playerIndex, player.getLocation());
-                        askForTeleport(player);
-                    }else{
-                        plugin.getServer().getConsoleSender().sendMessage("["+ plugin.getName() +"] Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.RED+"refusé");
-                        player.sendMessage("§cVous n'avez le droit qu'à §n"+usagePerDay+"§r§c téléportations aléatoires par jour.");
-                    }
+            if(abs(ChronoUnit.SECONDS.between(wildUsersLastAsked.get(playerIndex), dateTimeNow)) > usageCooldown){
+                if(wildUsersAskNum.get(playerIndex) < usagePerDay){
+                    wildUsersLastAsked.set(playerIndex, dateTimeNow);
+                    wildUsersStartLocation.set(playerIndex, player.getLocation());
+                    askForTeleport(player);
                 }else{
                     plugin.getServer().getConsoleSender().sendMessage("["+ plugin.getName() +"] Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.RED+"refusé");
-                    player.sendMessage("§cVous devez attendre §n"+usageCooldown+"s§r§c avant de relancer la commande.");
+                    player.sendMessage("§cVous n'avez le droit qu'à §n"+usagePerDay+"§r§c téléportations aléatoires par jour.");
                 }
             }else{
-                wildUsersIndexes.add(playerUUID);
-                wildUsersLastAsked.add(dateTimeNow);
-                wildUsersAskNum.add(0);
-                wildUsersStartLocation.add(player.getLocation());
-                askForTeleport(player);
+                plugin.getServer().getConsoleSender().sendMessage("["+ plugin.getName() +"] Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.RED+"refusé");
+                player.sendMessage("§cVous devez attendre §n"+usageCooldown+"s§r§c avant de relancer la commande.");
             }
         }
         return true;
@@ -98,13 +89,14 @@ public class wildCommand implements CommandExecutor {
                     // Date bidon pour annuler le cooldown (c'est ma date de naissance :D)
                     wildUsersLastAsked.set(playerIndex, LocalDateTime.parse("2001-12-11 12:30", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
                 }else{
-                    teleportPlayer(player, playerIndex);
+                    teleportPlayer(player);
                 }
             }
         }.runTaskLater(plugin, delayInTicks);
     }
 
-    private void teleportPlayer(Player player, int playerIndex){
+    private void teleportPlayer(Player player){
+        int playerIndex = wildUsersIndexes.indexOf(player.getUniqueId());
         wildUsersAskNum.set(playerIndex, wildUsersAskNum.get(playerIndex)+1);
 
         // on récupère la liste des biomes exclus
@@ -156,6 +148,45 @@ public class wildCommand implements CommandExecutor {
             player.sendMessage("§7§oIl vous reste " + (usagePerDay - wildUsersAskNum.get(playerIndex)) + " téléportations pour aujourd'hui.");
         }else{
             player.sendMessage("§7§oVous avez épuisé toutes vos téléportations du jour.");
+        }
+    }
+
+    public List<Object> getPlayerStats(Player player){
+        if(!wildUsersIndexes.contains(player.getUniqueId())){
+            return new ArrayList<>();
+        }else{
+            int playerIndex = wildUsersIndexes.indexOf(player.getUniqueId());
+            // Indexes:
+            // - 0: Nombre d'utilisation du jour
+            // - 1: Date de la dernière commande
+            List<Object> stats = new ArrayList<Object>();
+            stats.add(wildUsersAskNum.get(playerIndex));
+            stats.add(wildUsersLastAsked.get(playerIndex));
+            return stats;
+        }
+    }
+
+    public void setPlayerStats(Player player, List<Object> stats){
+        LocalDateTime dateTimeNow = LocalDateTime.now();
+
+        if(!wildUsersIndexes.contains(player.getUniqueId())){
+            wildUsersIndexes.add(player.getUniqueId());
+            wildUsersLastAsked.add(dateTimeNow);
+            wildUsersAskNum.add(0);
+            wildUsersStartLocation.add(player.getLocation());
+        }
+        int playerIndex = wildUsersIndexes.indexOf(player.getUniqueId());
+
+        // Indexes:
+        // - 0: Nombre d'utilisation du jour
+        // - 1: Date de la dernière commande
+        LocalDateTime savedDateTime = (LocalDateTime)stats.get(1);
+        if(ChronoUnit.HOURS.between(savedDateTime, dateTimeNow) > 24){
+            wildUsersAskNum.set(playerIndex, 0);
+            wildUsersLastAsked.set(playerIndex, savedDateTime);
+        }else{
+            wildUsersAskNum.set(playerIndex, (int)stats.get(0));
+            wildUsersLastAsked.set(playerIndex, savedDateTime);
         }
     }
 }

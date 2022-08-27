@@ -1,4 +1,4 @@
-package com.slprojects.slcraftplugin.commandes;
+package com.slprojects.slcraftplugin.commands.publics;
 
 import com.slprojects.slcraftplugin.Main;
 import org.bukkit.ChatColor;
@@ -14,12 +14,12 @@ import java.sql.ResultSet;
 import java.time.LocalDateTime;
 import java.util.Random;
 
-public class linkCodeCommand implements CommandExecutor {
+public class linkCode implements CommandExecutor {
 
     // Variables
     private final Main plugin;
 
-    public linkCodeCommand(Main plugin){
+    public linkCode(Main plugin){
         // On récupère la classe parente pour les paramètres
         this.plugin = plugin;
     }
