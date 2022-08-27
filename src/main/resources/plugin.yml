@@ -13,6 +13,12 @@ commands:
     usage: /wild
     permission: slcraft.wild
 
+  reset-wild:
+    description: ADMIN - Permet de réinitialiser le compteur de téléportation aléatoire d'un joueur
+    aliases: [reset-wild, wildreset]
+    usage: /reset-wild
+    permission: slcraft.admin.reset-wild
+
   getlinkcode:
     description: Te permet d'obtenir un code pour associer ton compte Minecraft au site internet du serveur.'
     aliases: [ getlinkcode ]

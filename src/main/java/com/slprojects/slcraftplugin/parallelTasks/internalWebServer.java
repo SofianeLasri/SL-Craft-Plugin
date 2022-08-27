@@ -1,4 +1,4 @@
-package com.slprojects.slcraftplugin.tachesParalleles;
+package com.slprojects.slcraftplugin.parallelTasks;
 
 import com.slprojects.slcraftplugin.Main;
 import org.bukkit.ChatColor;
@@ -18,8 +18,8 @@ public class internalWebServer {
     public static void startServer(Main plugin){
         int serverPort = plugin.getConfig().getInt("internal-webserver-port");
 
-        plugin.getServer().getConsoleSender().sendMessage("Lancement du serveur web intégré sur le port " + ChatColor.GOLD + serverPort);
-        plugin.getServer().getConsoleSender().sendMessage(ChatColor.YELLOW + "Attention! Le serveur ne fonctionne pas avec les requêtes https!");
+        plugin.getServer().getConsoleSender().sendMessage("["+ plugin.getName() +"] Lancement du serveur web intégré sur le port " + ChatColor.GOLD + serverPort);
+        plugin.getServer().getConsoleSender().sendMessage(ChatColor.YELLOW + "["+ plugin.getName() +"] Attention! Le serveur ne fonctionne pas avec les requêtes https!");
         // On fait un thread pour écouter le port
         Runnable serverThread = () -> {
             try {
@@ -113,7 +113,7 @@ public class internalWebServer {
                     client.close(); // Close the socket itself
                 }
             } catch (IOException e) {
-                plugin.getServer().getConsoleSender().sendMessage(ChatColor.RED + "Erreur lors de l'écoute du port " + ChatColor.GOLD  + serverPort);
+                plugin.getServer().getConsoleSender().sendMessage(ChatColor.RED + "["+ plugin.getName() +"] Erreur lors de l'écoute du port " + ChatColor.GOLD  + serverPort);
                 e.printStackTrace();
 
                 // On va logger le message sur discord
@@ -125,7 +125,7 @@ public class internalWebServer {
                     urlString = plugin.getConfig().getString("discordBot-api-url") + "mc/error/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
                     relaunchListener(plugin);
                 } catch (UnsupportedEncodingException ex) {
-                    plugin.getServer().getConsoleSender().sendMessage(ChatColor.RED + "Erreur lors de l'encodage du message. Func waitForDiscordMsg::startServer(Main plugin)");
+                    plugin.getServer().getConsoleSender().sendMessage(ChatColor.RED + "["+ plugin.getName() +"] Erreur lors de l'encodage du message. Func waitForDiscordMsg::startServer(Main plugin)");
                     ex.printStackTrace();
                 }
                 plugin.getHttp(urlString);
@@ -137,7 +137,7 @@ public class internalWebServer {
         new Thread(serverThread).start();
     }
 
-    //TODO: Vérifier l'utilité de cette fonction
+    // TODO: Vérifier l'utilité de cette fonction
     public static void relaunchListener(Main plugin) {
         // On relance la fonction avec une latence
         startServer(plugin);

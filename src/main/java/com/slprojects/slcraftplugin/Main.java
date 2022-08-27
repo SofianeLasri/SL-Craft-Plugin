@@ -1,9 +1,10 @@
 package com.slprojects.slcraftplugin;
 
-import com.slprojects.slcraftplugin.commandes.linkCodeCommand;
-import com.slprojects.slcraftplugin.commandes.wildCommand;
-import com.slprojects.slcraftplugin.tachesParalleles.savePlayerData;
-import com.slprojects.slcraftplugin.tachesParalleles.internalWebServer;
+import com.slprojects.slcraftplugin.commands.admins.wildReset;
+import com.slprojects.slcraftplugin.commands.publics.linkCode;
+import com.slprojects.slcraftplugin.commands.publics.wild;
+import com.slprojects.slcraftplugin.parallelTasks.playerDataHandler;
+import com.slprojects.slcraftplugin.parallelTasks.internalWebServer;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.cacheddata.CachedMetaData;
@@ -38,8 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,7 +47,8 @@ public final class Main extends JavaPlugin implements Listener {
     private List<UUID> wildCommandActiveUsers;
     private static FileConfiguration config;
     private static LuckPerms luckPermsApi;
-    private com.slprojects.slcraftplugin.tachesParalleles.savePlayerData savePlayerData;
+    public playerDataHandler playerDataHandler;
+    public wild wildCommand;
 
     // Fonctions appelées à des évènements clés
     @Override
@@ -59,7 +59,7 @@ public final class Main extends JavaPlugin implements Listener {
             // On initialise les listeners
             getServer().getPluginManager().registerEvents(this, this);
         } else {
-            getServer().getConsoleSender().sendMessage(ChatColor.RED+"[\"+ this.getName() +\"] PlaceholderAPI n'est pas accessible!");
+            getServer().getConsoleSender().sendMessage(ChatColor.RED+"["+ this.getName() +"] PlaceholderAPI n'est pas accessible!");
             getServer().getPluginManager().disablePlugin(this);
         }
 
@@ -84,17 +84,19 @@ public final class Main extends JavaPlugin implements Listener {
         reloadConfig();
         config = getConfig();
         updateConfig();
-        savePlayerData = new savePlayerData(this);
+        playerDataHandler = new playerDataHandler(this);
 
         // On initialise la base de donnée
         initDatabase();
 
-        wildCommandActiveUsers = new ArrayList<>();
-        wildCommand wildCommand = new wildCommand(this);
-        Objects.requireNonNull(getCommand("wild")).setExecutor(wildCommand);
+        wildCommand = new wild(this);
+        getCommand("wild").setExecutor(wildCommand);
 
-        linkCodeCommand linkCodeCommand = new linkCodeCommand(this);
-        Objects.requireNonNull(getCommand("getLinkCode")).setExecutor(linkCodeCommand);
+        wildReset wildReset = new wildReset(this);
+        getCommand("reset-wild").setExecutor(wildReset);
+
+        linkCode linkCodeCommand = new linkCode(this);
+        getCommand("getLinkCode").setExecutor(linkCodeCommand);
 
         internalWebServer.startServer(this);
 
@@ -106,14 +108,14 @@ public final class Main extends JavaPlugin implements Listener {
         // Plugin shutdown logic
         getServer().getConsoleSender().sendMessage(ChatColor.RED+"SL-Craft | Plugin éteint");
 
-        getServer().getOnlinePlayers().forEach(player -> savePlayerData.saveOnQuit(player));
+        getServer().getOnlinePlayers().forEach(player -> playerDataHandler.quitEvent(player));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerJoin(PlayerJoinEvent e) {
         // On désactive le message par défaut
         e.joinMessage(null);
-        savePlayerData.saveOnJoin(e.getPlayer());
+        playerDataHandler.joinEvent(e.getPlayer());
 
         // On affiche le message de bienvenue
         String welcomeMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("player-join-message")));
@@ -131,7 +133,7 @@ public final class Main extends JavaPlugin implements Listener {
     public void onPlayerQuit(PlayerQuitEvent e) {
         // On désactive le message par défaut
         e.quitMessage(null);
-        savePlayerData.saveOnQuit(e.getPlayer());
+        playerDataHandler.quitEvent(e.getPlayer());
         String quitMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("player-quit-message")));
         for(Player p : getServer().getOnlinePlayers()){
             p.sendMessage(quitMessage);
@@ -268,26 +270,6 @@ public final class Main extends JavaPlugin implements Listener {
         sendMessageToDiscord(message, "SL-Craft");
     }
 
-    // Propre à la commande wild: évite les spams de la commande
-    public boolean checkActiveUserForWildCommand(UUID playerUuid){
-        if(wildCommandActiveUsers.contains(playerUuid)){
-            return false;
-        }else{
-            wildCommandActiveUsers.add(playerUuid);
-            return true;
-        }
-    }
-    public void removeActiveUserForWildCommand(UUID playerUuid){
-        if(wildCommandActiveUsers.contains(playerUuid)){
-            try {
-                TimeUnit.SECONDS.sleep(5);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            wildCommandActiveUsers.remove(playerUuid);
-        }
-    }
-
     public Connection bddOpenConn() { // si mot de passe avec des caractère spéciaux
         Connection conn=null;
         try {
@@ -310,10 +292,25 @@ public final class Main extends JavaPlugin implements Listener {
     
     private void updateConfig(){
         getLogger().info("Vérification du fichier de configuration...");
-        // On va vérifier si l'on dispose de la nouvelle variable du port du serveur web
+        // 1.6.0
         if(!config.contains("server-type")){
             getLogger().info("Ajout de la variable serverType dans le fichier de configuration...");
             config.set("server-type", "dev");
+
+            saveConfig();
+            reloadConfig();
+        }
+
+        if(config.contains("wild") && (config.contains("excluded-biomes") && config.contains("world") && config.contains("max-range"))){
+            getLogger().info("Mise à jour des paramètres concernant la commande /wild");
+
+            config.set("wild.excluded-biomes", config.get("excluded-biomes"));
+            config.set("wild.world", config.get("world"));
+            config.set("wild.max-range", config.get("max-range"));
+
+            config.set("excluded-biomes", null);
+            config.set("world", null);
+            config.set("max-range", null);
 
             config.options().copyDefaults(true);
             saveConfig();
