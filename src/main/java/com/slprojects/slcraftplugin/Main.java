@@ -1,10 +1,10 @@
 package com.slprojects.slcraftplugin;
 
-import com.slprojects.slcraftplugin.commands.admins.wildReset;
-import com.slprojects.slcraftplugin.commands.publics.linkCode;
-import com.slprojects.slcraftplugin.commands.publics.wild;
-import com.slprojects.slcraftplugin.parallelTasks.playerDataHandler;
-import com.slprojects.slcraftplugin.parallelTasks.internalWebServer;
+import com.slprojects.slcraftplugin.commands.admins.WildReset;
+import com.slprojects.slcraftplugin.commands.publics.LinkCode;
+import com.slprojects.slcraftplugin.commands.publics.Wild;
+import com.slprojects.slcraftplugin.parallelTasks.PlayerDataHandler;
+import com.slprojects.slcraftplugin.parallelTasks.InternalWebServer;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.cacheddata.CachedMetaData;
@@ -47,8 +47,8 @@ public final class Main extends JavaPlugin implements Listener {
     private List<UUID> wildCommandActiveUsers;
     private static FileConfiguration config;
     private static LuckPerms luckPermsApi;
-    public playerDataHandler playerDataHandler;
-    public wild wildCommand;
+    public PlayerDataHandler playerDataHandler;
+    public Wild wildCommand;
 
     // Fonctions appelées à des évènements clés
     @Override
@@ -84,21 +84,21 @@ public final class Main extends JavaPlugin implements Listener {
         reloadConfig();
         config = getConfig();
         updateConfig();
-        playerDataHandler = new playerDataHandler(this);
+        playerDataHandler = new PlayerDataHandler(this);
 
         // On initialise la base de donnée
         initDatabase();
 
-        wildCommand = new wild(this);
+        wildCommand = new Wild(this);
         getCommand("wild").setExecutor(wildCommand);
 
-        wildReset wildReset = new wildReset(this);
+        WildReset wildReset = new WildReset(this);
         getCommand("reset-wild").setExecutor(wildReset);
 
-        linkCode linkCodeCommand = new linkCode(this);
+        LinkCode linkCodeCommand = new LinkCode(this);
         getCommand("getLinkCode").setExecutor(linkCodeCommand);
 
-        internalWebServer.startServer(this);
+        InternalWebServer.startServer(this);
 
         getServer().getConsoleSender().sendMessage(ChatColor.GREEN+"SL-Craft | Plugin démarré");
     }
@@ -160,7 +160,7 @@ public final class Main extends JavaPlugin implements Listener {
         playerFormattedMessage = Pattern.compile("~~(.*?)~~").matcher(playerFormattedMessage).replaceAll("§m$1§r ");
 
         // Couleurs
-        playerFormattedMessage = Pattern.compile("&([a-f]|r|[0-8])").matcher(playerFormattedMessage).replaceAll("§$1");
+        playerFormattedMessage = Pattern.compile("&([a-f]|r|[0-9])").matcher(playerFormattedMessage).replaceAll("§$1");
 
         // Ping utilisateur
         Matcher m = Pattern.compile("@(.*?)($|[ ,;:!])").matcher(playerFormattedMessage);

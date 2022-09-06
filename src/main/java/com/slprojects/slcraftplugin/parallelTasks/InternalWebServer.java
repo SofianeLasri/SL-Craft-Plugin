@@ -13,7 +13,7 @@ import java.net.Socket;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 
-public class internalWebServer {
+public class InternalWebServer {
     @SuppressWarnings({ "unchecked", "InfiniteLoopStatement" })
     public static void startServer(Main plugin){
         int serverPort = plugin.getConfig().getInt("internal-webserver-port");

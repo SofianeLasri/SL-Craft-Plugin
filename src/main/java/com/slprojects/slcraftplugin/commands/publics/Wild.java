@@ -19,7 +19,7 @@ import java.util.*;
 
 import static java.lang.Math.abs;
 
-public class wild implements CommandExecutor {
+public class Wild implements CommandExecutor {
 
     // Variables
     private final Main plugin;
@@ -31,7 +31,7 @@ public class wild implements CommandExecutor {
     private final int usageCooldown;
     private final int usagePerDay;
 
-    public wild(Main plugin){
+    public Wild(Main plugin){
         // On récupère la classe parente pour les paramètres
         this.plugin = plugin;
         wildUsersIndexes = new ArrayList<>();

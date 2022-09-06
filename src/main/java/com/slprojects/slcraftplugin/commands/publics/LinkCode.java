@@ -14,12 +14,12 @@ import java.sql.ResultSet;
 import java.time.LocalDateTime;
 import java.util.Random;
 
-public class linkCode implements CommandExecutor {
+public class LinkCode implements CommandExecutor {
 
     // Variables
     private final Main plugin;
 
-    public linkCode(Main plugin){
+    public LinkCode(Main plugin){
         // On récupère la classe parente pour les paramètres
         this.plugin = plugin;
     }

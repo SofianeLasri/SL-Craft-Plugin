@@ -15,14 +15,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class playerDataHandler {
+public class PlayerDataHandler {
     private final Main plugin;
     private Connection con;
     // Playtime
     private final List<UUID> playTimeUsersIndexes;
     private final List<LocalDateTime> playTimeUsersDate;
 
-    public playerDataHandler(Main plugin){
+    public PlayerDataHandler(Main plugin){
         this.plugin = plugin;
         playTimeUsersIndexes = new ArrayList<>();
         playTimeUsersDate = new ArrayList<>();

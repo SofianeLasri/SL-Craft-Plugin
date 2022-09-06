@@ -13,10 +13,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class wildReset implements CommandExecutor {
+public class WildReset implements CommandExecutor {
     private final Main plugin;
 
-    public wildReset(Main plugin){
+    public WildReset(Main plugin){
         this.plugin = plugin;
     }
 
