@@ -3,8 +3,9 @@ package com.slprojects.slcraftplugin;
 import com.slprojects.slcraftplugin.commands.admins.WildReset;
 import com.slprojects.slcraftplugin.commands.publics.LinkCode;
 import com.slprojects.slcraftplugin.commands.publics.Wild;
-import com.slprojects.slcraftplugin.parallelTasks.PlayerDataHandler;
 import com.slprojects.slcraftplugin.parallelTasks.InternalWebServer;
+import com.slprojects.slcraftplugin.parallelTasks.PeriodicEvent;
+import com.slprojects.slcraftplugin.parallelTasks.PlayerDataHandler;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.cacheddata.CachedMetaData;
@@ -38,19 +39,20 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class Main extends JavaPlugin implements Listener {
     // Variables
-    private List<UUID> wildCommandActiveUsers;
     private static FileConfiguration config;
     private static LuckPerms luckPermsApi;
+
+    // Publiques car on les appelle ailleurs
     public PlayerDataHandler playerDataHandler;
     public Wild wildCommand;
+    public PeriodicEvent periodicEvent;
+    public final static int ticksPerSeconds = 20;
 
-    // Fonctions appelées à des évènements clés
     @Override
     public void onEnable() {
         // On s'assure qu'on a placeholder api
@@ -84,11 +86,14 @@ public final class Main extends JavaPlugin implements Listener {
         reloadConfig();
         config = getConfig();
         updateConfig();
-        playerDataHandler = new PlayerDataHandler(this);
 
-        // On initialise la base de donnée
         initDatabase();
 
+        playerDataHandler = new PlayerDataHandler(this);
+        InternalWebServer.startServer(this);
+        periodicEvent = new PeriodicEvent(this);
+
+        // On initialise les commandes
         wildCommand = new Wild(this);
         getCommand("wild").setExecutor(wildCommand);
 
@@ -97,8 +102,6 @@ public final class Main extends JavaPlugin implements Listener {
 
         LinkCode linkCodeCommand = new LinkCode(this);
         getCommand("getLinkCode").setExecutor(linkCodeCommand);
-
-        InternalWebServer.startServer(this);
 
         getServer().getConsoleSender().sendMessage(ChatColor.GREEN+"SL-Craft | Plugin démarré");
     }
@@ -142,7 +145,7 @@ public final class Main extends JavaPlugin implements Listener {
     }
 
     // On renvoie chaque message des joueurs sur le canal de chat du serveur discord
-    @SuppressWarnings({"unchecked", "deprecation"})
+    @SuppressWarnings({"deprecation"})
     @EventHandler(priority = EventPriority.LOWEST)
     void AsyncChatEvent(AsyncPlayerChatEvent e) {
         String playerFormattedMessage = e.getMessage();
@@ -316,6 +319,8 @@ public final class Main extends JavaPlugin implements Listener {
             saveConfig();
             reloadConfig();
         }
+
+        // 1.6.1
     }
 
     private void initDatabase(){
