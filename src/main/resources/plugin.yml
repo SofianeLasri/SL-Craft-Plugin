@@ -24,6 +24,3 @@ commands:
     aliases: [ getlinkcode ]
     usage: /getlinkcode
     permission: slcraft.getlinkcode
-
-periodicEventCallTime: 60 # En sencondes
-ticks-per-seconds: 20

@@ -51,7 +51,6 @@ public final class Main extends JavaPlugin implements Listener {
     public PlayerDataHandler playerDataHandler;
     public Wild wildCommand;
     public PeriodicEvent periodicEvent;
-    public final static int ticksPerSeconds = 20;
 
     @Override
     public void onEnable() {
@@ -321,6 +320,9 @@ public final class Main extends JavaPlugin implements Listener {
         }
 
         // 1.6.1
+        config.options().copyDefaults(true);
+        saveConfig();
+        reloadConfig();
     }
 
     private void initDatabase(){

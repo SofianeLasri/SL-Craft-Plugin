@@ -76,7 +76,7 @@ public class Wild implements CommandExecutor {
         int playerIndex = wildUsersIndexes.indexOf(player.getUniqueId());
         plugin.getServer().getConsoleSender().sendMessage("["+ plugin.getName() +"] Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.GREEN+"accepté");
         player.sendMessage("Vous allez être téléporté dans §c" + plugin.getConfig().getInt("wild.move-cooldown") + "s§r, ne bougez pas.");
-        int delayInTicks = plugin.getConfig().getInt("wild.move-cooldown") * plugin.ticksPerSeconds;
+        int delayInTicks = plugin.getConfig().getInt("wild.move-cooldown") * plugin.getConfig().getInt("ticks-per-seconds");
 
         new BukkitRunnable() {
             @Override

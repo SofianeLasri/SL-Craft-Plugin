@@ -39,3 +39,7 @@ discordBot-api-url: "http://node.sl-projects.com:27001/"
 
 # Config générale
 server-type: prod # prod/dev
+
+# Periodic events
+periodic-event-call-time: 60 # En sencondes
+ticks-per-seconds: 20
