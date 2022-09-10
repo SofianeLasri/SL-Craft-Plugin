@@ -1,6 +1,7 @@
 package com.slprojects.slcraftplugin.parallelTasks;
 
 import com.slprojects.slcraftplugin.Main;
+import com.slprojects.slcraftplugin.utils.ConsoleLog;
 import org.bukkit.ChatColor;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -30,7 +31,7 @@ public class PeriodicEvent {
     }
 
     private void periodicEvent() {
-        plugin.getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "[SL-Craft] Évènement périodique éxecuté.");
+        ConsoleLog.warning("[SL-Craft] Évènement périodique éxecuté.");
 
         // S'exécute à la fin
         doesTheEventIsCurrentlyRunning = false;

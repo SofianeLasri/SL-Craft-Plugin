@@ -105,13 +105,13 @@ public final class Main extends JavaPlugin implements Listener {
         LinkCode linkCodeCommand = new LinkCode(this);
         getCommand("getLinkCode").setExecutor(linkCodeCommand);
 
-        getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "SL-Craft | Plugin démarré");
+        ConsoleLog.success("Plugin démarré");
     }
 
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-        getServer().getConsoleSender().sendMessage(ChatColor.RED + "SL-Craft | Plugin éteint");
+        ConsoleLog.danger("Plugin désactivé, au revoir!");
 
         getServer().getOnlinePlayers().forEach(player -> playerDataHandler.quitEvent(player));
     }
@@ -195,7 +195,7 @@ public final class Main extends JavaPlugin implements Listener {
 
             // Et dans la console
             if (e.getPlayer() == p) {
-                getServer().getConsoleSender().sendMessage(CompleteMessage);
+                ConsoleLog.info(CompleteMessage);
             }
         }
         // On envoie le message sur discord (on envoie le msg sans les couleur ni le formatage)
@@ -237,7 +237,7 @@ public final class Main extends JavaPlugin implements Listener {
             con.disconnect();
             returnData = response.toString();
         } catch (Exception ex) {
-            getServer().getConsoleSender().sendMessage(ChatColor.RED + "Impossible de se connecter à l'url " + urlString + ". Func getHttp(String urlString)");
+            ConsoleLog.danger("Impossible de se connecter à l'url " + urlString + ". Func getHttp(String urlString)");
             ex.printStackTrace();
         }
 
@@ -264,7 +264,7 @@ public final class Main extends JavaPlugin implements Listener {
 
             String response = getHttp(urlString);
             if (getConfig().getBoolean("msg-verbose")) {
-                getServer().getConsoleSender().sendMessage("Func AsyncChatEvent(PlayerChatEvent e), HTTP response:" + response);
+                ConsoleLog.info("Func AsyncChatEvent(PlayerChatEvent e), HTTP response:" + response);
             }
         } catch (UnsupportedEncodingException ex) {
             ConsoleLog.danger("Impossible de d'encoder les données. Func AsyncChatEvent(PlayerChatEvent e)");
@@ -281,7 +281,7 @@ public final class Main extends JavaPlugin implements Listener {
         try {
             Class.forName("org.mariadb.jdbc.MariaDbPoolDataSource");
         } catch (ClassNotFoundException e) {
-            getServer().getConsoleSender().sendMessage(ChatColor.RED + "Il manque le driver MariaDB!");
+            ConsoleLog.danger("Il manque le driver MariaDB!");
             getServer().getPluginManager().disablePlugin(this);
         }
         try {
@@ -290,7 +290,7 @@ public final class Main extends JavaPlugin implements Listener {
             ConsoleLog.success("Connexion à la base de données réussie!");
         }// ou les saisir
         catch (SQLException e) {
-            getServer().getConsoleSender().sendMessage(ChatColor.RED + "Erreur lors de la connexion à la base de données.");
+            ConsoleLog.danger("Erreur lors de la connexion à la base de données.");
             getServer().getPluginManager().disablePlugin(this);
         }
         return conn;
@@ -350,7 +350,7 @@ public final class Main extends JavaPlugin implements Listener {
             ps.executeQuery();
             con.close();
         } catch (Exception e) {
-            getServer().getConsoleSender().sendMessage(ChatColor.RED + "Erreur lors de l'exécution de initDatabase(): " + e);
+ConsoleLog.danger("Erreur lors de l'exécution de initDatabase(): " + e);
         }
     }
 }

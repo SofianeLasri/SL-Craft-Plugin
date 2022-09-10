@@ -1,6 +1,7 @@
 package com.slprojects.slcraftplugin.commands.admins;
 
 import com.slprojects.slcraftplugin.Main;
+import com.slprojects.slcraftplugin.utils.ConsoleLog;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -38,14 +39,14 @@ public class WildReset implements CommandExecutor {
                     if (sender instanceof Player) {
                         sender.sendMessage("§7§o" + msg);
                     } else {
-                        plugin.getServer().getConsoleSender().sendMessage(msg);
+                    ConsoleLog.info(msg);
                     }
                 } else {
                     String errorMsg = "Joueur n°" + i + " (dans la liste) non trouvé. :(";
                     if (sender instanceof Player) {
                         sender.sendMessage("§c" + errorMsg);
                     } else {
-                        plugin.getServer().getConsoleSender().sendMessage(ChatColor.RED + errorMsg);
+                        ConsoleLog.danger(errorMsg);
                     }
                 }
             }
@@ -54,7 +55,7 @@ public class WildReset implements CommandExecutor {
             if (sender instanceof Player) {
                 sender.sendMessage("§c" + errorMsg);
             } else {
-                plugin.getServer().getConsoleSender().sendMessage(ChatColor.RED + errorMsg);
+                ConsoleLog.danger(errorMsg);
             }
         }
         return true;

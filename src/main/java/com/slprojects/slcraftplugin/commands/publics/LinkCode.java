@@ -1,6 +1,7 @@
 package com.slprojects.slcraftplugin.commands.publics;
 
 import com.slprojects.slcraftplugin.Main;
+import com.slprojects.slcraftplugin.utils.ConsoleLog;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -66,7 +67,7 @@ public class LinkCode implements CommandExecutor {
                 }
                 player.sendMessage("Utilise ce code pour lier ton compte: " + ChatColor.GREEN + generatedString);
                 player.sendMessage(ChatColor.GRAY + "Ce code à usage unique expirera dans 5 minutes.");
-                plugin.getServer().getConsoleSender().sendMessage("Le joueur " + ChatColor.GOLD + player.getName() + ChatColor.RESET + " a généré le code " + ChatColor.GREEN + generatedString + ChatColor.RESET + ChatColor.GRAY + " - Il expirera le " + java.sql.Timestamp.valueOf(LocalDateTime.now().plusMinutes(5)));
+                ConsoleLog.info("Le joueur " + ChatColor.GOLD + player.getName() + ChatColor.RESET + " a généré le code " + ChatColor.GREEN + generatedString + ChatColor.RESET + ChatColor.GRAY + " - Il expirera le " + java.sql.Timestamp.valueOf(LocalDateTime.now().plusMinutes(5)));
 
             } catch (Exception e) {
                 e.printStackTrace();
