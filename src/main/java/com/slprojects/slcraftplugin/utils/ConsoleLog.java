@@ -11,14 +11,14 @@ public class ConsoleLog {
     }
 
     public static void warning(String message) {
-        getServer().getConsoleSender().sendMessage(ChatColor.GOLD + Main.pluginName + "] " + message);
+        getServer().getConsoleSender().sendMessage(ChatColor.GOLD + "[" + Main.pluginName + "] " + message);
     }
 
     public static void danger(String message) {
-        getServer().getConsoleSender().sendMessage(ChatColor.RED + Main.pluginName + "] " + message);
+        getServer().getConsoleSender().sendMessage(ChatColor.RED + "[" + Main.pluginName + "] " + message);
     }
 
     public static void success(String message) {
-        getServer().getConsoleSender().sendMessage(ChatColor.GREEN + Main.pluginName + "] " + message);
+        getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "[" + Main.pluginName + "] " + message);
     }
 }
