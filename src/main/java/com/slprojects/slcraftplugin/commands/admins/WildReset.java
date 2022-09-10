@@ -39,7 +39,7 @@ public class WildReset implements CommandExecutor {
                     if (sender instanceof Player) {
                         sender.sendMessage("§7§o" + msg);
                     } else {
-                    ConsoleLog.info(msg);
+                        ConsoleLog.info(msg);
                     }
                 } else {
                     String errorMsg = "Joueur n°" + i + " (dans la liste) non trouvé. :(";
