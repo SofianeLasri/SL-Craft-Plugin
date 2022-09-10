@@ -3,6 +3,7 @@ package com.slprojects.slcraftplugin.parallelTasks;
 import com.slprojects.slcraftplugin.Main;
 import com.slprojects.slcraftplugin.utils.ConsoleLog;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class PeriodicEvent {
@@ -31,6 +32,9 @@ public class PeriodicEvent {
     }
 
     private void periodicEvent() {
+        for (Player player : plugin.getServer().getOnlinePlayers()){
+            plugin.playerDataHandler.savePlayedTime(player);
+        }
         ConsoleLog.warning("[SL-Craft] Évènement périodique éxecuté.");
 
         // S'exécute à la fin

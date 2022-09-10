@@ -2,6 +2,7 @@ package com.slprojects.slcraftplugin.parallelTasks;
 
 import com.slprojects.slcraftplugin.Main;
 import com.slprojects.slcraftplugin.utils.ConsoleLog;
+import com.slprojects.slcraftplugin.utils.Database;
 import org.bukkit.ChatColor;
 import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
@@ -21,12 +22,14 @@ public class PlayerDataHandler {
     private Connection con;
     // Playtime
     private final List<UUID> playTimeUsersIndexes;
-    private final List<LocalDateTime> playTimeUsersDate;
+    private final List<LocalDateTime> userSessionJoinDateTime;
+    private final List<Long> userStoredPlayedTimeBeforeJoining;
 
     public PlayerDataHandler(Main plugin) {
         this.plugin = plugin;
         playTimeUsersIndexes = new ArrayList<>();
-        playTimeUsersDate = new ArrayList<>();
+        userSessionJoinDateTime = new ArrayList<>();
+        userStoredPlayedTimeBeforeJoining = new ArrayList<>();
     }
 
     public void joinEvent(Player player) {
@@ -34,13 +37,19 @@ public class PlayerDataHandler {
         con = plugin.bddOpenConn();
 
         playTimeUsersIndexes.add(player.getUniqueId());
-        playTimeUsersDate.add(LocalDateTime.now());
+        userSessionJoinDateTime.add(LocalDateTime.now());
 
-        insertPlayerName(player); // On check si le nom du joueur est déjà enregistré
+        boolean playerAlreadyJoinded = insertPlayerName(player); // On check si le nom du joueur est déjà enregistré
         statsPlayerEntryExit(player, true); // On ajoute son entée
         checkPlayerJoinedDate(player); // On check si on dipose de sa date de rejoint
         setPlayerJoinCount(player); // On set le nombre de fois qu'il a rejoint
         plugin.wildCommand.setPlayerStats(player, getPlayerWildCmdStats(player));
+
+        if(playerAlreadyJoinded){
+            userStoredPlayedTimeBeforeJoining.add(Long.valueOf(Database.getUserSetting(player.getUniqueId().toString(), "playedTime")));
+        }else{
+            userStoredPlayedTimeBeforeJoining.add(0L);
+        }
 
         // On ferme la bdd
         try {
@@ -55,7 +64,7 @@ public class PlayerDataHandler {
         // On ouvre la bdd
         con = plugin.bddOpenConn();
 
-        calculatePlayerPlayTime(player); // On actualise le temps de jeu du joueur
+        savePlayedTime(player); // On actualise le temps de jeu du joueur
         statsPlayerEntryExit(player, false); // On ajoute son sortie
         savePlayerWildCmdStats(player, plugin.wildCommand.getPlayerStats(player));
 
@@ -69,7 +78,8 @@ public class PlayerDataHandler {
     }
 
     // Fonctions
-    private void insertPlayerName(Player player) {
+    private boolean insertPlayerName(Player player) {
+        boolean returnValue = false;
         try {
             // On va d'abord regarder si on a déjà renseigné le nom du joueur
             PreparedStatement rechercheUtilisateur = con.prepareStatement("SELECT * FROM site_userSetting WHERE uuid = ? AND name = 'playerName' AND value = ?");
@@ -78,6 +88,7 @@ public class PlayerDataHandler {
             ResultSet resultat = rechercheUtilisateur.executeQuery();
 
             if (resultat.next()) {
+                returnValue = true;
                 // On a déjà renseigné le nom du joueur on va donc vérifier s'il a besoin d'être mis à jour
                 if (!resultat.getString("value").equals(player.getName())) {
                     // On va mettre à jour le nom du joueur
@@ -97,6 +108,7 @@ public class PlayerDataHandler {
             ConsoleLog.warning("Func savePlayerData::insertPlayerName(Player player)");
             e.printStackTrace();
         }
+        return returnValue;
     }
 
     private void statsPlayerEntryExit(Player player, boolean isEnter) {
@@ -195,36 +207,15 @@ public class PlayerDataHandler {
         }
     }
 
-    private void calculatePlayerPlayTime(Player player) {
+    public void savePlayedTime(Player player) {
         // On va calculer le temps de jeu du joueur
+        UUID playerUuid = player.getUniqueId();
         LocalDateTime timeNow = LocalDateTime.now();
-        Duration duration = Duration.between(timeNow, playTimeUsersDate.get(playTimeUsersIndexes.indexOf(player.getUniqueId())));
+        Duration duration = Duration.between(timeNow, userSessionJoinDateTime.get(playTimeUsersIndexes.indexOf(playerUuid)));
         long playedTimeInSeconds = Math.abs(duration.toSeconds());
+        long actualPlayedTime = userStoredPlayedTimeBeforeJoining.get(playTimeUsersIndexes.indexOf(playerUuid)) + playedTimeInSeconds;
 
-        try {
-            // On va vérifier si on a déjà renseigné le temps de jeu du joueur par le passé
-            PreparedStatement recherchePlayTime = con.prepareStatement("SELECT * FROM site_userSetting WHERE uuid = ? AND name = 'playedTime'");
-            recherchePlayTime.setString(1, player.getUniqueId().toString());
-            ResultSet resultat = recherchePlayTime.executeQuery();
-
-            if (resultat.next()) {
-                // On a déjà renseigné ça par le passé, on va donc faire un update
-                PreparedStatement updatePlayTime = con.prepareStatement("UPDATE site_userSetting SET value = ? WHERE uuid = ? AND name = 'playedTime'");
-                updatePlayTime.setString(1, String.valueOf(Long.parseLong(resultat.getString("value")) + playedTimeInSeconds));
-                updatePlayTime.setString(2, player.getUniqueId().toString());
-                updatePlayTime.executeQuery();
-            } else {
-                // On n'a pas encore renseigné le temps de jeu du joueur, on va donc faire un insert
-                PreparedStatement insertionPlayTime = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'playedTime',?)");
-                insertionPlayTime.setString(1, player.getUniqueId().toString());
-                insertionPlayTime.setString(2, String.valueOf(playedTimeInSeconds));
-                insertionPlayTime.executeQuery();
-            }
-
-        } catch (SQLException e) {
-            ConsoleLog.warning("Func savePlayerData::increasePlayerPlayTime(Player player)");
-            e.printStackTrace();
-        }
+        Database.setUserSetting(playerUuid.toString(), "playedTime", String.valueOf(actualPlayedTime));
     }
 
     private List<Object> getPlayerWildCmdStats(Player player) {
