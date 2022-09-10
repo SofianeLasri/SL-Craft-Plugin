@@ -24,14 +24,14 @@ public class Wild implements CommandExecutor {
     // Variables
     private final Main plugin;
 
-    private List<UUID> wildUsersIndexes;
-    private List<LocalDateTime> wildUsersLastAsked;
-    private List<Integer> wildUsersAskNum;
-    private List<Location> wildUsersStartLocation;
+    private final List<UUID> wildUsersIndexes;
+    private final List<LocalDateTime> wildUsersLastAsked;
+    private final List<Integer> wildUsersAskNum;
+    private final List<Location> wildUsersStartLocation;
     private final int usageCooldown;
     private final int usagePerDay;
 
-    public Wild(Main plugin){
+    public Wild(Main plugin) {
         // On récupère la classe parente pour les paramètres
         this.plugin = plugin;
         wildUsersIndexes = new ArrayList<>();
@@ -55,49 +55,49 @@ public class Wild implements CommandExecutor {
 
             playerIndex = wildUsersIndexes.indexOf(playerUUID);
 
-            if(abs(ChronoUnit.SECONDS.between(wildUsersLastAsked.get(playerIndex), dateTimeNow)) > usageCooldown){
-                if(wildUsersAskNum.get(playerIndex) < usagePerDay){
+            if (abs(ChronoUnit.SECONDS.between(wildUsersLastAsked.get(playerIndex), dateTimeNow)) > usageCooldown) {
+                if (wildUsersAskNum.get(playerIndex) < usagePerDay) {
                     wildUsersLastAsked.set(playerIndex, dateTimeNow);
                     wildUsersStartLocation.set(playerIndex, player.getLocation());
                     askForTeleport(player);
-                }else{
-                    plugin.getServer().getConsoleSender().sendMessage("["+ plugin.getName() +"] Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.RED+"refusé");
-                    player.sendMessage("§cVous n'avez le droit qu'à §n"+usagePerDay+"§r§c téléportations aléatoires par jour.");
+                } else {
+                    plugin.getServer().getConsoleSender().sendMessage("[" + plugin.getName() + "] Le joueur " + ChatColor.GOLD + player.getName() + ChatColor.RESET + " a exécuté la commande " + ChatColor.GOLD + "/wild" + ChatColor.RESET + " : " + ChatColor.RED + "refusé");
+                    player.sendMessage("§cVous n'avez le droit qu'à §n" + usagePerDay + "§r§c téléportations aléatoires par jour.");
                 }
-            }else{
-                plugin.getServer().getConsoleSender().sendMessage("["+ plugin.getName() +"] Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.RED+"refusé");
-                player.sendMessage("§cVous devez attendre §n"+usageCooldown+"s§r§c avant de relancer la commande.");
+            } else {
+                plugin.getServer().getConsoleSender().sendMessage("[" + plugin.getName() + "] Le joueur " + ChatColor.GOLD + player.getName() + ChatColor.RESET + " a exécuté la commande " + ChatColor.GOLD + "/wild" + ChatColor.RESET + " : " + ChatColor.RED + "refusé");
+                player.sendMessage("§cVous devez attendre §n" + usageCooldown + "s§r§c avant de relancer la commande.");
             }
         }
         return true;
     }
 
-    private void askForTeleport(Player player){
+    private void askForTeleport(Player player) {
         int playerIndex = wildUsersIndexes.indexOf(player.getUniqueId());
-        plugin.getServer().getConsoleSender().sendMessage("["+ plugin.getName() +"] Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a exécuté la commande "+ChatColor.GOLD+"/wild"+ChatColor.RESET+" : "+ChatColor.GREEN+"accepté");
+        plugin.getServer().getConsoleSender().sendMessage("[" + plugin.getName() + "] Le joueur " + ChatColor.GOLD + player.getName() + ChatColor.RESET + " a exécuté la commande " + ChatColor.GOLD + "/wild" + ChatColor.RESET + " : " + ChatColor.GREEN + "accepté");
         player.sendMessage("Vous allez être téléporté dans §c" + plugin.getConfig().getInt("wild.move-cooldown") + "s§r, ne bougez pas.");
         int delayInTicks = plugin.getConfig().getInt("wild.move-cooldown") * plugin.getConfig().getInt("ticks-per-seconds");
 
         new BukkitRunnable() {
             @Override
-            public void run(){
+            public void run() {
                 Location oldPlayerLocation = wildUsersStartLocation.get(playerIndex);
                 Location newPlayerLocation = player.getLocation();
 
-                if((oldPlayerLocation.getX() != newPlayerLocation.getX()) && (oldPlayerLocation.getY() != newPlayerLocation.getY()) && (oldPlayerLocation.getZ() != newPlayerLocation.getZ())){
+                if ((oldPlayerLocation.getX() != newPlayerLocation.getX()) && (oldPlayerLocation.getY() != newPlayerLocation.getY()) && (oldPlayerLocation.getZ() != newPlayerLocation.getZ())) {
                     player.sendMessage("§cVous avez bougé, téléportation annulée.");
                     // Date bidon pour annuler le cooldown (c'est ma date de naissance :D)
                     wildUsersLastAsked.set(playerIndex, LocalDateTime.parse("2001-12-11 12:30", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
-                }else{
+                } else {
                     teleportPlayer(player);
                 }
             }
         }.runTaskLater(plugin, delayInTicks);
     }
 
-    private void teleportPlayer(Player player){
+    private void teleportPlayer(Player player) {
         int playerIndex = wildUsersIndexes.indexOf(player.getUniqueId());
-        wildUsersAskNum.set(playerIndex, wildUsersAskNum.get(playerIndex)+1);
+        wildUsersAskNum.set(playerIndex, wildUsersAskNum.get(playerIndex) + 1);
 
         // on récupère la liste des biomes exclus
         List<String> excludedBiomes;
@@ -107,27 +107,28 @@ public class Wild implements CommandExecutor {
 
         // On défini le radius de téléportation
         Random r = new Random();
-        int low = plugin.getConfig().getInt("wild.max-range")*(-1);
+        int low = plugin.getConfig().getInt("wild.max-range") * (-1);
         int high = plugin.getConfig().getInt("wild.max-range");
 
         // Tant qu'on a un biome non souhaite, on va regérer les coordonnées
-        boolean flag=true;
-        int x=0, z=0, y=0;
-        while(flag){
-            flag=false;
-            x = r.nextInt(high-low) + low;
-            z = r.nextInt(high-low) + low;
+        boolean flag = true;
+        int x = 0, z = 0, y = 0;
+        while (flag) {
+            flag = false;
+            x = r.nextInt(high - low) + low;
+            z = r.nextInt(high - low) + low;
             y = Bukkit.getWorld(plugin.getConfig().getString("wild.world")).getHighestBlockYAt(x, z);
             y++; // On incrémente la pos Y pour éviter que le joueur se retrouve dans le sol
 
             for (String excludedBiome : excludedBiomes) {
                 // Biomes non reconnus ou supprimés (deep warm ocean)
-                try{
+                try {
                     Biome.valueOf(excludedBiome.toUpperCase());
                     if (Bukkit.getWorld(plugin.getConfig().getString("wild.world")).getBiome(x, y, z).equals(Biome.valueOf(excludedBiome.toUpperCase()))) {
                         flag = true;
                     }
-                }catch(Exception ignored){}
+                } catch (Exception ignored) {
+                }
             }
         }
 
@@ -137,24 +138,24 @@ public class Wild implements CommandExecutor {
 
         int maxVal = Math.max(abs(x), abs(z));
 
-        if(maxVal <= 10000){
+        if (maxVal <= 10000) {
             player.sendMessage("§7§oVous êtes sur un biome généré en 1.16");
-        }else if(maxVal <= 14500){
+        } else if (maxVal <= 14500) {
             player.sendMessage("§7§oVous êtes sur un biome généré en 1.17");
-        }else{
+        } else {
             player.sendMessage("§7§oVous êtes sur un biome généré en 1.18");
         }
-        if((usagePerDay - wildUsersAskNum.get(playerIndex)) > 0){
+        if ((usagePerDay - wildUsersAskNum.get(playerIndex)) > 0) {
             player.sendMessage("§7§oIl vous reste " + (usagePerDay - wildUsersAskNum.get(playerIndex)) + " téléportations pour aujourd'hui.");
-        }else{
+        } else {
             player.sendMessage("§7§oVous avez épuisé toutes vos téléportations du jour.");
         }
     }
 
-    public List<Object> getPlayerStats(Player player){
-        if(!wildUsersIndexes.contains(player.getUniqueId())){
+    public List<Object> getPlayerStats(Player player) {
+        if (!wildUsersIndexes.contains(player.getUniqueId())) {
             return new ArrayList<>();
-        }else{
+        } else {
             int playerIndex = wildUsersIndexes.indexOf(player.getUniqueId());
             // Indexes:
             // - 0: Nombre d'utilisation du jour
@@ -166,10 +167,10 @@ public class Wild implements CommandExecutor {
         }
     }
 
-    public void setPlayerStats(Player player, List<Object> stats){
+    public void setPlayerStats(Player player, List<Object> stats) {
         LocalDateTime dateTimeNow = LocalDateTime.now();
 
-        if(!wildUsersIndexes.contains(player.getUniqueId())){
+        if (!wildUsersIndexes.contains(player.getUniqueId())) {
             wildUsersIndexes.add(player.getUniqueId());
             wildUsersLastAsked.add(dateTimeNow);
             wildUsersAskNum.add(0);
@@ -180,12 +181,12 @@ public class Wild implements CommandExecutor {
         // Indexes:
         // - 0: Nombre d'utilisation du jour
         // - 1: Date de la dernière commande
-        LocalDateTime savedDateTime = (LocalDateTime)stats.get(1);
-        if(ChronoUnit.HOURS.between(savedDateTime, dateTimeNow) > 24){
+        LocalDateTime savedDateTime = (LocalDateTime) stats.get(1);
+        if (ChronoUnit.HOURS.between(savedDateTime, dateTimeNow) > 24) {
             wildUsersAskNum.set(playerIndex, 0);
             wildUsersLastAsked.set(playerIndex, savedDateTime);
-        }else{
-            wildUsersAskNum.set(playerIndex, (int)stats.get(0));
+        } else {
+            wildUsersAskNum.set(playerIndex, (int) stats.get(0));
             wildUsersLastAsked.set(playerIndex, savedDateTime);
         }
     }

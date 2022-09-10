@@ -19,20 +19,20 @@ public class LinkCode implements CommandExecutor {
     // Variables
     private final Main plugin;
 
-    public LinkCode(Main plugin){
+    public LinkCode(Main plugin) {
         // On récupère la classe parente pour les paramètres
         this.plugin = plugin;
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args){
-        if (sender instanceof Player){
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
+        if (sender instanceof Player) {
             Player player = (Player) sender;
 
             // On ouvre la bdd
             Connection con = plugin.bddOpenConn();
 
-            try{
+            try {
                 // On créé le code
                 int leftLimit = 48; // numeral '0'
                 int rightLimit = 122; // letter 'z'
@@ -50,25 +50,25 @@ public class LinkCode implements CommandExecutor {
                 rechercheLinkingCode.setString(1, player.getUniqueId().toString());
                 ResultSet resultat = rechercheLinkingCode.executeQuery();
 
-                if(resultat.next()){
+                if (resultat.next()) {
                     PreparedStatement modifyAccountLinkingCode = con.prepareStatement("UPDATE `site_linkCode` SET `code`=?, `time`=?, `used`='0' WHERE `uuid`=?");
                     modifyAccountLinkingCode.setString(1, generatedString);
                     modifyAccountLinkingCode.setString(2, java.sql.Timestamp.valueOf(LocalDateTime.now()).toString());
                     modifyAccountLinkingCode.setString(3, player.getUniqueId().toString());
                     modifyAccountLinkingCode.executeQuery();
 
-                }else{
+                } else {
                     PreparedStatement insertionAccountLinkingCode = con.prepareStatement("INSERT INTO site_linkCode (`uuid`, `code`, `time`, `used`) VALUES (?, ?, ?, '0')");
                     insertionAccountLinkingCode.setString(1, player.getUniqueId().toString());
                     insertionAccountLinkingCode.setString(2, generatedString);
                     insertionAccountLinkingCode.setString(3, java.sql.Timestamp.valueOf(LocalDateTime.now()).toString());
                     insertionAccountLinkingCode.executeQuery();
                 }
-                player.sendMessage("Utilise ce code pour lier ton compte: "+ChatColor.GREEN+generatedString);
-                player.sendMessage(ChatColor.GRAY+"Ce code à usage unique expirera dans 5 minutes.");
-                plugin.getServer().getConsoleSender().sendMessage("Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" a généré le code "+ChatColor.GREEN+generatedString+ChatColor.RESET+ChatColor.GRAY+" - Il expirera le "+ java.sql.Timestamp.valueOf(LocalDateTime.now().plusMinutes(5)));
+                player.sendMessage("Utilise ce code pour lier ton compte: " + ChatColor.GREEN + generatedString);
+                player.sendMessage(ChatColor.GRAY + "Ce code à usage unique expirera dans 5 minutes.");
+                plugin.getServer().getConsoleSender().sendMessage("Le joueur " + ChatColor.GOLD + player.getName() + ChatColor.RESET + " a généré le code " + ChatColor.GREEN + generatedString + ChatColor.RESET + ChatColor.GRAY + " - Il expirera le " + java.sql.Timestamp.valueOf(LocalDateTime.now().plusMinutes(5)));
 
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 

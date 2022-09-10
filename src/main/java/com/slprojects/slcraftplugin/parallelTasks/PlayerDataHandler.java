@@ -23,7 +23,7 @@ public class PlayerDataHandler {
     private final List<UUID> playTimeUsersIndexes;
     private final List<LocalDateTime> playTimeUsersDate;
 
-    public PlayerDataHandler(Main plugin){
+    public PlayerDataHandler(Main plugin) {
         this.plugin = plugin;
         playTimeUsersIndexes = new ArrayList<>();
         playTimeUsersDate = new ArrayList<>();
@@ -46,7 +46,7 @@ public class PlayerDataHandler {
         try {
             con.close();
         } catch (SQLException e) {
-ConsoleLog.warning("Impossible de fermer la connexion à la bdd. Func savePlayerData::saveOnJoin(Player player)");
+            ConsoleLog.warning("Impossible de fermer la connexion à la bdd. Func savePlayerData::saveOnJoin(Player player)");
             e.printStackTrace();
         }
     }
@@ -63,13 +63,13 @@ ConsoleLog.warning("Impossible de fermer la connexion à la bdd. Func savePlayer
         try {
             con.close();
         } catch (SQLException e) {
-ConsoleLog.warning("Impossible de fermer la connexion à la bdd. Func savePlayerData::saveOnQuit(Player player)");
+            ConsoleLog.warning("Impossible de fermer la connexion à la bdd. Func savePlayerData::saveOnQuit(Player player)");
             e.printStackTrace();
         }
     }
 
     // Fonctions
-    private void insertPlayerName(Player player){
+    private void insertPlayerName(Player player) {
         try {
             // On va d'abord regarder si on a déjà renseigné le nom du joueur
             PreparedStatement rechercheUtilisateur = con.prepareStatement("SELECT * FROM site_userSetting WHERE uuid = ? AND name = 'playerName' AND value = ?");
@@ -77,16 +77,16 @@ ConsoleLog.warning("Impossible de fermer la connexion à la bdd. Func savePlayer
             rechercheUtilisateur.setString(2, player.getName());
             ResultSet resultat = rechercheUtilisateur.executeQuery();
 
-            if(resultat.next()){
+            if (resultat.next()) {
                 // On a déjà renseigné le nom du joueur on va donc vérifier s'il a besoin d'être mis à jour
-                if(!resultat.getString("value").equals(player.getName())){
+                if (!resultat.getString("value").equals(player.getName())) {
                     // On va mettre à jour le nom du joueur
                     PreparedStatement updateUtilisateur = con.prepareStatement("UPDATE site_userSetting SET value = ? WHERE uuid = ? AND name = 'playerName'");
                     updateUtilisateur.setString(1, player.getName());
                     updateUtilisateur.setString(2, player.getUniqueId().toString());
                     updateUtilisateur.executeUpdate();
                 }
-            }else{
+            } else {
                 // On peut insérer le nom du joueur
                 PreparedStatement insertUtilisateur = con.prepareStatement("INSERT INTO site_userSetting (uuid, name, value) VALUES (?, 'playerName', ?)");
                 insertUtilisateur.setString(1, player.getUniqueId().toString());
@@ -94,12 +94,12 @@ ConsoleLog.warning("Impossible de fermer la connexion à la bdd. Func savePlayer
                 insertUtilisateur.executeQuery();
             }
         } catch (SQLException e) {
-ConsoleLog.warning("Func savePlayerData::insertPlayerName(Player player)");
+            ConsoleLog.warning("Func savePlayerData::insertPlayerName(Player player)");
             e.printStackTrace();
         }
     }
 
-    private void statsPlayerEntryExit(Player player, boolean isEnter){
+    private void statsPlayerEntryExit(Player player, boolean isEnter) {
         try {
             PreparedStatement insertPlayerEntryOrExit = con.prepareStatement("INSERT INTO site_playerEntries (uuid, isJoin, date) VALUES (?, ?, ?)");
             insertPlayerEntryOrExit.setString(1, player.getUniqueId().toString());
@@ -107,28 +107,28 @@ ConsoleLog.warning("Func savePlayerData::insertPlayerName(Player player)");
             insertPlayerEntryOrExit.setString(3, Timestamp.valueOf(java.time.LocalDateTime.now()).toString());
             insertPlayerEntryOrExit.executeQuery();
         } catch (SQLException e) {
-ConsoleLog.warning("Func savePlayerData::playerAddPlayerEntryOrExit(Player player, boolean isEnter)");
+            ConsoleLog.warning("Func savePlayerData::playerAddPlayerEntryOrExit(Player player, boolean isEnter)");
             e.printStackTrace();
         }
     }
 
-    private void checkPlayerJoinedDate(Player player){
+    private void checkPlayerJoinedDate(Player player) {
         try {
             // On va vérifier si on l'a déjà renseigné par le passé
             PreparedStatement rechercheUtilisateur = con.prepareStatement("SELECT * FROM site_userSetting WHERE uuid = ? AND name = 'joinedDate'");
             rechercheUtilisateur.setString(1, player.getUniqueId().toString());
             ResultSet resultat = rechercheUtilisateur.executeQuery();
 
-            if(!resultat.next()){
+            if (!resultat.next()) {
                 // On n'a pas renseigné la date de création du joueur
-                if(player.hasPlayedBefore()){
+                if (player.hasPlayedBefore()) {
                     // On va piocher la date d'inscription chez CoreProtect (si elle existe)
                     // On la prend chez CoreProtect car le plugin a été installé dans les premières semaines du serveur. Il a donc bcp plus de données que nous concernant les anciens joueurs.
                     PreparedStatement rechercheDateInscription = con.prepareStatement("SELECT time FROM co_user WHERE uuid = ?");
                     rechercheDateInscription.setString(1, player.getUniqueId().toString());
                     resultat = rechercheDateInscription.executeQuery();
 
-                    if(resultat.next()){
+                    if (resultat.next()) {
                         // On insère la date d'inscription
                         PreparedStatement insertionDateInscription = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joinedDate',?)");
                         insertionDateInscription.setString(1, player.getUniqueId().toString());
@@ -136,7 +136,7 @@ ConsoleLog.warning("Func savePlayerData::playerAddPlayerEntryOrExit(Player playe
                         insertionDateInscription.executeQuery();
 
                         // On va précisier que la date d'inscription a été trouvée chez CoreProtect
-                        ConsoleLog.info("Le joueur "+ ChatColor.GOLD+player.getName()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs. On lui a donc attribué comme date de création du compte, celle que détenait CoreProtect.");
+                        ConsoleLog.info("Le joueur " + ChatColor.GOLD + player.getName() + ChatColor.RESET + " n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs. On lui a donc attribué comme date de création du compte, celle que détenait CoreProtect.");
                     } else {
                         // On insère la date d'inscription (du coup on considère que Le joueur n'a pas joué avant, malgré la condition)
                         PreparedStatement insertionDateInscription = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joinedDate',?)");
@@ -152,9 +152,9 @@ ConsoleLog.warning("Func savePlayerData::playerAddPlayerEntryOrExit(Player playe
 
                         // On est daccord que ceci n'est pas censé arriver, cela ne concerne que mes potes n'étant venus que durant les premières semaines du serveur.
 
-                        ConsoleLog.info("Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs, ni dans la table des utilisateurs de CoreProtect. On lui a donc attribué comme date de création du compte, la date du début de sa partie.");
+                        ConsoleLog.info("Le joueur " + ChatColor.GOLD + player.getName() + ChatColor.RESET + " n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs, ni dans la table des utilisateurs de CoreProtect. On lui a donc attribué comme date de création du compte, la date du début de sa partie.");
                     }
-                }else{
+                } else {
                     // Le joueur est nouveau, on insère la date d'inscription
                     PreparedStatement insertionDateInscription = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joinedDate',?)");
                     insertionDateInscription.setString(1, player.getUniqueId().toString());
@@ -163,25 +163,25 @@ ConsoleLog.warning("Func savePlayerData::playerAddPlayerEntryOrExit(Player playe
                 }
             }
         } catch (SQLException e) {
-ConsoleLog.warning("Func savePlayerData::checkJoinedDate(Player player)");
+            ConsoleLog.warning("Func savePlayerData::checkJoinedDate(Player player)");
             e.printStackTrace();
         }
     }
 
-    void setPlayerJoinCount(Player player){
-        try{
+    void setPlayerJoinCount(Player player) {
+        try {
             // On va vérifier si on a déjà renseigné le nombre de fois que le joueur a rejoint le serveur par le passé
             PreparedStatement rechercheJoinCount = con.prepareStatement("SELECT * FROM site_userSetting WHERE uuid = ? AND name = 'joins'");
             rechercheJoinCount.setString(1, player.getUniqueId().toString());
             ResultSet resultat = rechercheJoinCount.executeQuery();
 
-            if(resultat.next()){
+            if (resultat.next()) {
                 // On a déjà renseigné ça par le passé, on va donc faire un update
                 PreparedStatement updateJoinCount = con.prepareStatement("UPDATE site_userSetting SET value = ? WHERE uuid = ? AND name = 'joins'");
                 updateJoinCount.setString(1, String.valueOf(player.getStatistic(Statistic.LEAVE_GAME) + 1));
                 updateJoinCount.setString(2, player.getUniqueId().toString());
                 updateJoinCount.executeQuery();
-            }else{
+            } else {
                 // On n'a pas encore renseigné le nombre de fois que le joueur a rejoint le serveur, on va donc faire un insert
                 PreparedStatement insertionJoinCount = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joins',?)");
                 insertionJoinCount.setString(1, player.getUniqueId().toString());
@@ -190,30 +190,30 @@ ConsoleLog.warning("Func savePlayerData::checkJoinedDate(Player player)");
             }
 
         } catch (SQLException e) {
-ConsoleLog.warning("Func savePlayerData::setPlayerJoinCount(Player player)");
+            ConsoleLog.warning("Func savePlayerData::setPlayerJoinCount(Player player)");
             e.printStackTrace();
         }
     }
 
-    private void calculatePlayerPlayTime(Player player){
+    private void calculatePlayerPlayTime(Player player) {
         // On va calculer le temps de jeu du joueur
         LocalDateTime timeNow = LocalDateTime.now();
         Duration duration = Duration.between(timeNow, playTimeUsersDate.get(playTimeUsersIndexes.indexOf(player.getUniqueId())));
         long playedTimeInSeconds = Math.abs(duration.toSeconds());
 
-        try{
+        try {
             // On va vérifier si on a déjà renseigné le temps de jeu du joueur par le passé
             PreparedStatement recherchePlayTime = con.prepareStatement("SELECT * FROM site_userSetting WHERE uuid = ? AND name = 'playedTime'");
             recherchePlayTime.setString(1, player.getUniqueId().toString());
             ResultSet resultat = recherchePlayTime.executeQuery();
 
-            if(resultat.next()){
+            if (resultat.next()) {
                 // On a déjà renseigné ça par le passé, on va donc faire un update
                 PreparedStatement updatePlayTime = con.prepareStatement("UPDATE site_userSetting SET value = ? WHERE uuid = ? AND name = 'playedTime'");
                 updatePlayTime.setString(1, String.valueOf(Long.parseLong(resultat.getString("value")) + playedTimeInSeconds));
                 updatePlayTime.setString(2, player.getUniqueId().toString());
                 updatePlayTime.executeQuery();
-            }else{
+            } else {
                 // On n'a pas encore renseigné le temps de jeu du joueur, on va donc faire un insert
                 PreparedStatement insertionPlayTime = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'playedTime',?)");
                 insertionPlayTime.setString(1, player.getUniqueId().toString());
@@ -222,12 +222,12 @@ ConsoleLog.warning("Func savePlayerData::setPlayerJoinCount(Player player)");
             }
 
         } catch (SQLException e) {
-ConsoleLog.warning("Func savePlayerData::increasePlayerPlayTime(Player player)");
+            ConsoleLog.warning("Func savePlayerData::increasePlayerPlayTime(Player player)");
             e.printStackTrace();
         }
     }
 
-    private List<Object> getPlayerWildCmdStats(Player player){
+    private List<Object> getPlayerWildCmdStats(Player player) {
         // Indexes:
         // - 0: Nombre d'utilisation du jour
         // - 1: Date de la dernière commande
@@ -237,32 +237,32 @@ ConsoleLog.warning("Func savePlayerData::increasePlayerPlayTime(Player player)")
             playerLastUsed.setString(1, player.getUniqueId().toString());
             ResultSet lastUsedResult = playerLastUsed.executeQuery();
 
-            if(lastUsedResult.next()){
+            if (lastUsedResult.next()) {
                 LocalDateTime lastUsed = Timestamp.valueOf(lastUsedResult.getString("value")).toLocalDateTime();
-                if(ChronoUnit.HOURS.between(lastUsed, LocalDateTime.now()) > 24){
-                    return new ArrayList<Object>(){
+                if (ChronoUnit.HOURS.between(lastUsed, LocalDateTime.now()) > 24) {
+                    return new ArrayList<Object>() {
                         {
                             add(0);
                             add(lastUsed);
                         }
                     };
-                }else{
+                } else {
                     PreparedStatement playerAskNum = con.prepareStatement("SELECT * FROM site_userSetting WHERE uuid = ? AND name = 'wildCmdAskNum'");
                     playerAskNum.setString(1, player.getUniqueId().toString());
                     ResultSet askNumResult = playerAskNum.executeQuery();
 
-                    if(askNumResult.next()){
-                        return new ArrayList<Object>(){
+                    if (askNumResult.next()) {
+                        return new ArrayList<Object>() {
                             {
                                 add(Integer.valueOf(askNumResult.getString("value")));
                                 add(lastUsed);
                             }
                         };
-                    }else{
+                    } else {
                         ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
                         ConsoleLog.warning("Fonctionnement anormal! On dispose de la date de 'wildCmdLastUsed' mais pas de 'wildCmdAskNum' pour le joueur " + player.getName() + " UUID: " + player.getUniqueId());
                         ConsoleLog.warning("Passage de 'wildCmdAskNum' à 0.");
-                        return new ArrayList<Object>(){
+                        return new ArrayList<Object>() {
                             {
                                 add(0);
                                 add(lastUsed);
@@ -270,7 +270,7 @@ ConsoleLog.warning("Func savePlayerData::increasePlayerPlayTime(Player player)")
                         };
                     }
                 }
-            }else{
+            } else {
                 plugin.getLogger().info("Mise à jour du joueur " + player.getName() + " UUID: " + player.getUniqueId());
                 ConsoleLog.info("Création des champs 'wildCmdLastUsed' et 'wildCmdAskNum'");
 
@@ -286,7 +286,7 @@ ConsoleLog.warning("Func savePlayerData::increasePlayerPlayTime(Player player)")
                 insertWildCmdAskNum.setString(2, "0");
                 insertWildCmdAskNum.executeQuery();
 
-                return new ArrayList<Object>(){
+                return new ArrayList<Object>() {
                     {
                         add(0);
                         add(dateBidon);
@@ -295,15 +295,15 @@ ConsoleLog.warning("Func savePlayerData::increasePlayerPlayTime(Player player)")
             }
 
         } catch (SQLException e) {
-ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
+            ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
             e.printStackTrace();
         }
 
-ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
+        ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
         ConsoleLog.warning("Fonctionnement anormal! La recherche dans la bdd a échouée pour le joueur " + player.getName() + " UUID: " + player.getUniqueId());
-ConsoleLog.warning("Passage de 'wildCmdLastUsed' au 11 décembre 2001 et 'wildCmdAskNum' à 0");
+        ConsoleLog.warning("Passage de 'wildCmdLastUsed' au 11 décembre 2001 et 'wildCmdAskNum' à 0");
 
-        return new ArrayList<Object>(){
+        return new ArrayList<Object>() {
             {
                 add(0);
                 add(LocalDateTime.parse("2001-12-11 12:30", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
@@ -311,7 +311,7 @@ ConsoleLog.warning("Passage de 'wildCmdLastUsed' au 11 décembre 2001 et 'wildCm
         };
     }
 
-    public void savePlayerWildCmdStats(Player player, List<Object> stats){
+    public void savePlayerWildCmdStats(Player player, List<Object> stats) {
         // Indexes:
         // - 0: Nombre d'utilisation du jour
         // - 1: Date de la dernière commande
@@ -324,12 +324,12 @@ ConsoleLog.warning("Passage de 'wildCmdLastUsed' au 11 décembre 2001 et 'wildCm
             updateWildCmdAskNum.executeUpdate();
 
             PreparedStatement updateWildCmdLastUsed = con.prepareStatement("UPDATE site_userSetting SET value = ? WHERE uuid = ? AND name = 'wildCmdLastUsed'");
-            updateWildCmdLastUsed.setString(1, Timestamp.valueOf((LocalDateTime)stats.get(1)).toString());
+            updateWildCmdLastUsed.setString(1, Timestamp.valueOf((LocalDateTime) stats.get(1)).toString());
             updateWildCmdLastUsed.setString(2, player.getUniqueId().toString());
             updateWildCmdLastUsed.executeUpdate();
 
         } catch (SQLException e) {
-ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
+            ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
             e.printStackTrace();
         }
     }

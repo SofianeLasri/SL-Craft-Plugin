@@ -59,7 +59,7 @@ public final class Main extends JavaPlugin implements Listener {
         pluginName = this.getName();
         // On s'assure qu'on a placeholder api
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
-ConsoleLog.info("PlaceholderAPI chargé");
+            ConsoleLog.info("PlaceholderAPI chargé");
             // On initialise les listeners
             getServer().getPluginManager().registerEvents(this, this);
         } else {
@@ -72,9 +72,9 @@ ConsoleLog.info("PlaceholderAPI chargé");
         if (getServer().getPluginManager().getPlugin("LuckPerms") != null) {
             RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
             if (provider != null) {
-ConsoleLog.info("LuckPerms chargé");
+                ConsoleLog.info("LuckPerms chargé");
                 luckPermsApi = provider.getProvider();
-            }else{
+            } else {
                 ConsoleLog.danger("LuckPerms n'est pas accessible!");
                 getServer().getPluginManager().disablePlugin(this);
             }
@@ -105,13 +105,13 @@ ConsoleLog.info("LuckPerms chargé");
         LinkCode linkCodeCommand = new LinkCode(this);
         getCommand("getLinkCode").setExecutor(linkCodeCommand);
 
-        getServer().getConsoleSender().sendMessage(ChatColor.GREEN+"SL-Craft | Plugin démarré");
+        getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "SL-Craft | Plugin démarré");
     }
 
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-        getServer().getConsoleSender().sendMessage(ChatColor.RED+"SL-Craft | Plugin éteint");
+        getServer().getConsoleSender().sendMessage(ChatColor.RED + "SL-Craft | Plugin éteint");
 
         getServer().getOnlinePlayers().forEach(player -> playerDataHandler.quitEvent(player));
     }
@@ -125,13 +125,13 @@ ConsoleLog.info("LuckPerms chargé");
         // On affiche le message de bienvenue
         String welcomeMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("player-join-message")));
         // Et on joue un petit son chez tous les joueurs
-        for(Player p : getServer().getOnlinePlayers()){
+        for (Player p : getServer().getOnlinePlayers()) {
             p.sendMessage(welcomeMessage);
-            if(getConfig().getBoolean("player-join-playSound")){
+            if (getConfig().getBoolean("player-join-playSound")) {
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0);
             }
         }
-        sendMessageToDiscord("**"+e.getPlayer().getName()+"** vient de rejoindre le serveur");
+        sendMessageToDiscord("**" + e.getPlayer().getName() + "** vient de rejoindre le serveur");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -140,10 +140,10 @@ ConsoleLog.info("LuckPerms chargé");
         e.quitMessage(null);
         playerDataHandler.quitEvent(e.getPlayer());
         String quitMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("player-quit-message")));
-        for(Player p : getServer().getOnlinePlayers()){
+        for (Player p : getServer().getOnlinePlayers()) {
             p.sendMessage(quitMessage);
         }
-        sendMessageToDiscord("**"+e.getPlayer().getName()+"** a quitté le serveur");
+        sendMessageToDiscord("**" + e.getPlayer().getName() + "** a quitté le serveur");
     }
 
     // On renvoie chaque message des joueurs sur le canal de chat du serveur discord
@@ -176,9 +176,9 @@ ConsoleLog.info("LuckPerms chargé");
         // On va chercher le préfix dans LuckPerms
         CachedMetaData playerMetaData = luckPermsApi.getPlayerAdapter(Player.class).getMetaData(e.getPlayer());
 
-        for (Player p: Bukkit.getOnlinePlayers()){
+        for (Player p : Bukkit.getOnlinePlayers()) {
             // Si le joueur a qui on va poster le message (p) a été mentionné
-            if(playerTags.contains(p.getName())){
+            if (playerTags.contains(p.getName())) {
                 // On colorise sa mention
                 playerFormattedMessage = Pattern.compile("@(" + p.getName() + ")($|[ ,;:!])").matcher(playerFormattedMessage).replaceAll("§r§l§d@$1§r$2");
 
@@ -194,7 +194,7 @@ ConsoleLog.info("LuckPerms chargé");
             p.sendMessage(CompleteMessage);
 
             // Et dans la console
-            if(e.getPlayer() == p){
+            if (e.getPlayer() == p) {
                 getServer().getConsoleSender().sendMessage(CompleteMessage);
             }
         }
@@ -246,7 +246,7 @@ ConsoleLog.info("LuckPerms chargé");
 
     // Envoyer un message sur le discord
     @SuppressWarnings({"unchecked"})
-    public void sendMessageToDiscord(String message, String username){
+    public void sendMessageToDiscord(String message, String username) {
         // On va vérifier que le joueur ne fait pas de @everyone ou de @here
         message = message.replace("<@everyone>", "**everyone**");
         message = message.replace("<@here>", "**here**");
@@ -263,51 +263,52 @@ ConsoleLog.info("LuckPerms chargé");
             String urlString = config.getString("discordBot-api-url") + "mc/chat/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
 
             String response = getHttp(urlString);
-            if(getConfig().getBoolean("msg-verbose")){
+            if (getConfig().getBoolean("msg-verbose")) {
                 getServer().getConsoleSender().sendMessage("Func AsyncChatEvent(PlayerChatEvent e), HTTP response:" + response);
             }
         } catch (UnsupportedEncodingException ex) {
-ConsoleLog.danger("Impossible de d'encoder les données. Func AsyncChatEvent(PlayerChatEvent e)");
+            ConsoleLog.danger("Impossible de d'encoder les données. Func AsyncChatEvent(PlayerChatEvent e)");
             ex.printStackTrace();
         }
     }
-    public void sendMessageToDiscord(String message){
+
+    public void sendMessageToDiscord(String message) {
         sendMessageToDiscord(message, "SL-Craft");
     }
 
     public Connection bddOpenConn() { // si mot de passe avec des caractère spéciaux
-        Connection conn=null;
+        Connection conn = null;
         try {
             Class.forName("org.mariadb.jdbc.MariaDbPoolDataSource");
-        } catch (ClassNotFoundException e){
-            getServer().getConsoleSender().sendMessage (ChatColor.RED+"Il manque le driver MariaDB!");
+        } catch (ClassNotFoundException e) {
+            getServer().getConsoleSender().sendMessage(ChatColor.RED + "Il manque le driver MariaDB!");
             getServer().getPluginManager().disablePlugin(this);
         }
         try {
-            MariaDbPoolDataSource dataSource = new MariaDbPoolDataSource("jdbc:mariadb://"+config.getString("database.host")+"/"+config.getString("database.database")+"?user="+config.getString("database.user")+"&password="+config.getString("database.password")+"&maxPoolSize=10");
+            MariaDbPoolDataSource dataSource = new MariaDbPoolDataSource("jdbc:mariadb://" + config.getString("database.host") + "/" + config.getString("database.database") + "?user=" + config.getString("database.user") + "&password=" + config.getString("database.password") + "&maxPoolSize=10");
             conn = dataSource.getConnection();
             ConsoleLog.success("Connexion à la base de données réussie!");
         }// ou les saisir
         catch (SQLException e) {
-            getServer().getConsoleSender().sendMessage(ChatColor.RED+"Erreur lors de la connexion à la base de données.");
+            getServer().getConsoleSender().sendMessage(ChatColor.RED + "Erreur lors de la connexion à la base de données.");
             getServer().getPluginManager().disablePlugin(this);
         }
         return conn;
     }
-    
-    private void updateConfig(){
-ConsoleLog.info("Vérification du fichier de configuration...");
+
+    private void updateConfig() {
+        ConsoleLog.info("Vérification du fichier de configuration...");
         // 1.6.0
-        if(!config.contains("server-type")){
-ConsoleLog.info("Ajout de la variable serverType dans le fichier de configuration...");
+        if (!config.contains("server-type")) {
+            ConsoleLog.info("Ajout de la variable serverType dans le fichier de configuration...");
             config.set("server-type", "dev");
 
             saveConfig();
             reloadConfig();
         }
 
-        if(config.contains("wild") && (config.contains("excluded-biomes") && config.contains("world") && config.contains("max-range"))){
-ConsoleLog.info("Mise à jour des paramètres concernant la commande /wild");
+        if (config.contains("wild") && (config.contains("excluded-biomes") && config.contains("world") && config.contains("max-range"))) {
+            ConsoleLog.info("Mise à jour des paramètres concernant la commande /wild");
 
             config.set("wild.excluded-biomes", config.get("excluded-biomes"));
             config.set("wild.world", config.get("world"));
@@ -328,17 +329,17 @@ ConsoleLog.info("Mise à jour des paramètres concernant la commande /wild");
         reloadConfig();
     }
 
-    private void initDatabase(){
-        try{
+    private void initDatabase() {
+        try {
             Connection con = bddOpenConn();
-            PreparedStatement ps=con.prepareStatement("CREATE TABLE IF NOT EXISTS `site_userSetting` (\n" +
+            PreparedStatement ps = con.prepareStatement("CREATE TABLE IF NOT EXISTS `site_userSetting` (\n" +
                     "  `uuid` varchar(36) NOT NULL DEFAULT '',\n" +
                     "  `name` varchar(128) NOT NULL,\n" +
                     "  `value` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,\n" +
                     "  PRIMARY KEY (`uuid`,`name`) USING BTREE\n" +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
             ps.executeQuery();
-            ps=con.prepareStatement("CREATE TABLE IF NOT EXISTS `site_linkCode` (\n" +
+            ps = con.prepareStatement("CREATE TABLE IF NOT EXISTS `site_linkCode` (\n" +
                     " `uuid` VARCHAR(36) NOT NULL,\n" +
                     " `code` VARCHAR(8) NOT NULL,\n" +
                     " `time` TIMESTAMP NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n" +
@@ -348,8 +349,8 @@ ConsoleLog.info("Mise à jour des paramètres concernant la commande /wild");
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
             ps.executeQuery();
             con.close();
-        }catch(Exception e){
-            getServer().getConsoleSender().sendMessage(ChatColor.RED+"Erreur lors de l'exécution de initDatabase(): "+e);
+        } catch (Exception e) {
+            getServer().getConsoleSender().sendMessage(ChatColor.RED + "Erreur lors de l'exécution de initDatabase(): " + e);
         }
     }
 }
