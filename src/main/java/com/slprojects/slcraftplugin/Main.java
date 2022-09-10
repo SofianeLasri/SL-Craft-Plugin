@@ -6,6 +6,7 @@ import com.slprojects.slcraftplugin.commands.publics.Wild;
 import com.slprojects.slcraftplugin.parallelTasks.InternalWebServer;
 import com.slprojects.slcraftplugin.parallelTasks.PeriodicEvent;
 import com.slprojects.slcraftplugin.parallelTasks.PlayerDataHandler;
+import com.slprojects.slcraftplugin.utils.ConsoleLog;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.cacheddata.CachedMetaData;
@@ -46,6 +47,7 @@ public final class Main extends JavaPlugin implements Listener {
     // Variables
     private static FileConfiguration config;
     private static LuckPerms luckPermsApi;
+    public static String pluginName;
 
     // Publiques car on les appelle ailleurs
     public PlayerDataHandler playerDataHandler;
@@ -54,13 +56,14 @@ public final class Main extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        pluginName = this.getName();
         // On s'assure qu'on a placeholder api
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            getLogger().info("PlaceholderAPI chargé");
+ConsoleLog.info("PlaceholderAPI chargé");
             // On initialise les listeners
             getServer().getPluginManager().registerEvents(this, this);
         } else {
-            getServer().getConsoleSender().sendMessage(ChatColor.RED+"["+ this.getName() +"] PlaceholderAPI n'est pas accessible!");
+            ConsoleLog.danger("PlaceholderAPI n'est pas accessible!");
             getServer().getPluginManager().disablePlugin(this);
         }
 
@@ -69,14 +72,14 @@ public final class Main extends JavaPlugin implements Listener {
         if (getServer().getPluginManager().getPlugin("LuckPerms") != null) {
             RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
             if (provider != null) {
-                getLogger().info("LuckPerms chargé");
+ConsoleLog.info("LuckPerms chargé");
                 luckPermsApi = provider.getProvider();
             }else{
-                getServer().getConsoleSender().sendMessage(ChatColor.RED+"["+ this.getName() +"] LuckPerms n'est pas accessible!");
+                ConsoleLog.danger("LuckPerms n'est pas accessible!");
                 getServer().getPluginManager().disablePlugin(this);
             }
         } else {
-            getServer().getConsoleSender().sendMessage(ChatColor.RED+"["+ this.getName() +"] LuckPerms n'est pas accessible!");
+            ConsoleLog.danger("LuckPerms n'est pas accessible!");
             getServer().getPluginManager().disablePlugin(this);
         }
 
@@ -264,7 +267,7 @@ public final class Main extends JavaPlugin implements Listener {
                 getServer().getConsoleSender().sendMessage("Func AsyncChatEvent(PlayerChatEvent e), HTTP response:" + response);
             }
         } catch (UnsupportedEncodingException ex) {
-            getLogger().warning(ChatColor.RED + "Impossible de d'encoder les données. Func AsyncChatEvent(PlayerChatEvent e)");
+ConsoleLog.danger("Impossible de d'encoder les données. Func AsyncChatEvent(PlayerChatEvent e)");
             ex.printStackTrace();
         }
     }
@@ -283,7 +286,7 @@ public final class Main extends JavaPlugin implements Listener {
         try {
             MariaDbPoolDataSource dataSource = new MariaDbPoolDataSource("jdbc:mariadb://"+config.getString("database.host")+"/"+config.getString("database.database")+"?user="+config.getString("database.user")+"&password="+config.getString("database.password")+"&maxPoolSize=10");
             conn = dataSource.getConnection();
-            //getLogger().info(ChatColor.GREEN+"Connexion à la base de données réussie!");
+            ConsoleLog.success("Connexion à la base de données réussie!");
         }// ou les saisir
         catch (SQLException e) {
             getServer().getConsoleSender().sendMessage(ChatColor.RED+"Erreur lors de la connexion à la base de données.");
@@ -293,10 +296,10 @@ public final class Main extends JavaPlugin implements Listener {
     }
     
     private void updateConfig(){
-        getLogger().info("Vérification du fichier de configuration...");
+ConsoleLog.info("Vérification du fichier de configuration...");
         // 1.6.0
         if(!config.contains("server-type")){
-            getLogger().info("Ajout de la variable serverType dans le fichier de configuration...");
+ConsoleLog.info("Ajout de la variable serverType dans le fichier de configuration...");
             config.set("server-type", "dev");
 
             saveConfig();
@@ -304,7 +307,7 @@ public final class Main extends JavaPlugin implements Listener {
         }
 
         if(config.contains("wild") && (config.contains("excluded-biomes") && config.contains("world") && config.contains("max-range"))){
-            getLogger().info("Mise à jour des paramètres concernant la commande /wild");
+ConsoleLog.info("Mise à jour des paramètres concernant la commande /wild");
 
             config.set("wild.excluded-biomes", config.get("excluded-biomes"));
             config.set("wild.world", config.get("world"));

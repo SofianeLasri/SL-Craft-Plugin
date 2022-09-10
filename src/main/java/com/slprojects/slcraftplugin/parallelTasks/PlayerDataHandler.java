@@ -1,6 +1,7 @@
 package com.slprojects.slcraftplugin.parallelTasks;
 
 import com.slprojects.slcraftplugin.Main;
+import com.slprojects.slcraftplugin.utils.ConsoleLog;
 import org.bukkit.ChatColor;
 import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
@@ -45,7 +46,7 @@ public class PlayerDataHandler {
         try {
             con.close();
         } catch (SQLException e) {
-            plugin.getLogger().warning("Impossible de fermer la connexion à la bdd. Func savePlayerData::saveOnJoin(Player player)");
+ConsoleLog.warning("Impossible de fermer la connexion à la bdd. Func savePlayerData::saveOnJoin(Player player)");
             e.printStackTrace();
         }
     }
@@ -62,7 +63,7 @@ public class PlayerDataHandler {
         try {
             con.close();
         } catch (SQLException e) {
-            plugin.getLogger().warning("Impossible de fermer la connexion à la bdd. Func savePlayerData::saveOnQuit(Player player)");
+ConsoleLog.warning("Impossible de fermer la connexion à la bdd. Func savePlayerData::saveOnQuit(Player player)");
             e.printStackTrace();
         }
     }
@@ -93,7 +94,7 @@ public class PlayerDataHandler {
                 insertUtilisateur.executeQuery();
             }
         } catch (SQLException e) {
-            plugin.getLogger().warning("Func savePlayerData::insertPlayerName(Player player)");
+ConsoleLog.warning("Func savePlayerData::insertPlayerName(Player player)");
             e.printStackTrace();
         }
     }
@@ -106,7 +107,7 @@ public class PlayerDataHandler {
             insertPlayerEntryOrExit.setString(3, Timestamp.valueOf(java.time.LocalDateTime.now()).toString());
             insertPlayerEntryOrExit.executeQuery();
         } catch (SQLException e) {
-            plugin.getLogger().warning("Func savePlayerData::playerAddPlayerEntryOrExit(Player player, boolean isEnter)");
+ConsoleLog.warning("Func savePlayerData::playerAddPlayerEntryOrExit(Player player, boolean isEnter)");
             e.printStackTrace();
         }
     }
@@ -135,7 +136,7 @@ public class PlayerDataHandler {
                         insertionDateInscription.executeQuery();
 
                         // On va précisier que la date d'inscription a été trouvée chez CoreProtect
-                        plugin.getLogger().info("Le joueur "+ ChatColor.GOLD+player.getName()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs. On lui a donc attribué comme date de création du compte, celle que détenait CoreProtect.");
+                        ConsoleLog.info("Le joueur "+ ChatColor.GOLD+player.getName()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs. On lui a donc attribué comme date de création du compte, celle que détenait CoreProtect.");
                     } else {
                         // On insère la date d'inscription (du coup on considère que Le joueur n'a pas joué avant, malgré la condition)
                         PreparedStatement insertionDateInscription = con.prepareStatement("INSERT INTO site_userSetting (`uuid`, `name`, `value`) VALUES (?,'joinedDate',?)");
@@ -151,7 +152,7 @@ public class PlayerDataHandler {
 
                         // On est daccord que ceci n'est pas censé arriver, cela ne concerne que mes potes n'étant venus que durant les premières semaines du serveur.
 
-                        plugin.getLogger().info("Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs, ni dans la table des utilisateurs de CoreProtect. On lui a donc attribué comme date de création du compte, la date du début de sa partie.");
+                        ConsoleLog.info("Le joueur "+ChatColor.GOLD+player.getName()+ChatColor.RESET+" n'avait pas de données sur sa date d'inscription dans dans la table des paramètres utilisateurs, ni dans la table des utilisateurs de CoreProtect. On lui a donc attribué comme date de création du compte, la date du début de sa partie.");
                     }
                 }else{
                     // Le joueur est nouveau, on insère la date d'inscription
@@ -162,7 +163,7 @@ public class PlayerDataHandler {
                 }
             }
         } catch (SQLException e) {
-            plugin.getLogger().warning("Func savePlayerData::checkJoinedDate(Player player)");
+ConsoleLog.warning("Func savePlayerData::checkJoinedDate(Player player)");
             e.printStackTrace();
         }
     }
@@ -189,7 +190,7 @@ public class PlayerDataHandler {
             }
 
         } catch (SQLException e) {
-            plugin.getLogger().warning("Func savePlayerData::setPlayerJoinCount(Player player)");
+ConsoleLog.warning("Func savePlayerData::setPlayerJoinCount(Player player)");
             e.printStackTrace();
         }
     }
@@ -221,7 +222,7 @@ public class PlayerDataHandler {
             }
 
         } catch (SQLException e) {
-            plugin.getLogger().warning("Func savePlayerData::increasePlayerPlayTime(Player player)");
+ConsoleLog.warning("Func savePlayerData::increasePlayerPlayTime(Player player)");
             e.printStackTrace();
         }
     }
@@ -258,9 +259,9 @@ public class PlayerDataHandler {
                             }
                         };
                     }else{
-                        plugin.getLogger().warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
-                        plugin.getLogger().warning("Fonctionnement anormal! On dispose de la date de 'wildCmdLastUsed' mais pas de 'wildCmdAskNum' pour le joueur " + player.getName() + " UUID: " + player.getUniqueId());
-                        plugin.getLogger().warning("Passage de 'wildCmdAskNum' à 0.");
+                        ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
+                        ConsoleLog.warning("Fonctionnement anormal! On dispose de la date de 'wildCmdLastUsed' mais pas de 'wildCmdAskNum' pour le joueur " + player.getName() + " UUID: " + player.getUniqueId());
+                        ConsoleLog.warning("Passage de 'wildCmdAskNum' à 0.");
                         return new ArrayList<Object>(){
                             {
                                 add(0);
@@ -271,7 +272,7 @@ public class PlayerDataHandler {
                 }
             }else{
                 plugin.getLogger().info("Mise à jour du joueur " + player.getName() + " UUID: " + player.getUniqueId());
-                plugin.getLogger().info("Création des champs 'wildCmdLastUsed' et 'wildCmdAskNum'");
+                ConsoleLog.info("Création des champs 'wildCmdLastUsed' et 'wildCmdAskNum'");
 
                 // On va insérer une date bidon pour éviter un potentiel cooldown
                 LocalDateTime dateBidon = LocalDateTime.parse("2001-12-11 12:30", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
@@ -294,13 +295,13 @@ public class PlayerDataHandler {
             }
 
         } catch (SQLException e) {
-            plugin.getLogger().warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
+ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
             e.printStackTrace();
         }
 
-        plugin.getLogger().warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
-        plugin.getLogger().warning("Fonctionnement anormal! La recherche dans la bdd a échouée pour le joueur " + player.getName() + " UUID: " + player.getUniqueId());
-        plugin.getLogger().warning("Passage de 'wildCmdLastUsed' au 11 décembre 2001 et 'wildCmdAskNum' à 0");
+ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
+        ConsoleLog.warning("Fonctionnement anormal! La recherche dans la bdd a échouée pour le joueur " + player.getName() + " UUID: " + player.getUniqueId());
+ConsoleLog.warning("Passage de 'wildCmdLastUsed' au 11 décembre 2001 et 'wildCmdAskNum' à 0");
 
         return new ArrayList<Object>(){
             {
@@ -328,7 +329,7 @@ public class PlayerDataHandler {
             updateWildCmdLastUsed.executeUpdate();
 
         } catch (SQLException e) {
-            plugin.getLogger().warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
+ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
             e.printStackTrace();
         }
     }
