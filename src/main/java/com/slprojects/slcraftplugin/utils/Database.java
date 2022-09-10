@@ -11,8 +11,10 @@ import java.sql.SQLException;
 
 import static org.bukkit.Bukkit.getServer;
 
+@SuppressWarnings("UnusedReturnValue")
 public class Database {
     static final private String userSettingsTabName = "site_userSetting";
+
     public static String getUserSetting(String uuid, String key) {
         Connection con = bddOpenConn();
         String returnValue = null;
@@ -23,7 +25,7 @@ public class Database {
             query.setString(2, key);
             ResultSet resultat = query.executeQuery();
 
-            if(resultat.next()){
+            if (resultat.next()) {
                 returnValue = resultat.getString("value");
             }
         } catch (SQLException e) {
@@ -40,20 +42,20 @@ public class Database {
         return returnValue;
     }
 
-    public static boolean setUserSetting(String uuid, String key, String value){
+    public static boolean setUserSetting(String uuid, String key, String value) {
         Connection con = bddOpenConn();
         boolean isOperationASuccess = false;
         boolean isEntryExists = (getUserSetting(uuid, key) != null);
 
         try {
-            if(isEntryExists){
+            if (isEntryExists) {
                 PreparedStatement updateEntry = con.prepareStatement("UPDATE site_userSetting SET value = ? WHERE uuid = ? AND name = ?");
                 updateEntry.setString(1, value);
                 updateEntry.setString(2, uuid);
                 updateEntry.setString(3, key);
                 updateEntry.executeUpdate();
                 isOperationASuccess = true;
-            }else{
+            } else {
                 isOperationASuccess = insertUserSettingEntry(uuid, key, value);
             }
         } catch (SQLException e) {
@@ -70,8 +72,8 @@ public class Database {
 
         return isOperationASuccess;
     }
-    
-    private static boolean insertUserSettingEntry(String uuid, String key, String value){
+
+    private static boolean insertUserSettingEntry(String uuid, String key, String value) {
         Connection con = bddOpenConn();
         boolean isOperationASuccess = false;
 

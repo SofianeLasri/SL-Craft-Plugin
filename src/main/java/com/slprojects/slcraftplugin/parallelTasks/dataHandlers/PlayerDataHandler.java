@@ -1,14 +1,12 @@
-package com.slprojects.slcraftplugin.parallelTasks;
+package com.slprojects.slcraftplugin.parallelTasks.dataHandlers;
 
 import com.slprojects.slcraftplugin.Main;
 import com.slprojects.slcraftplugin.utils.ConsoleLog;
-import com.slprojects.slcraftplugin.utils.Database;
 import org.bukkit.ChatColor;
 import org.bukkit.Statistic;
 import org.bukkit.entity.Player;
 
 import java.sql.*;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -17,39 +15,34 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class PlayerDataHandler {
+public class PlayerDataHandler implements dataHandler {
     private final Main plugin;
     private Connection con;
     // Playtime
-    private final List<UUID> playTimeUsersIndexes;
-    private final List<LocalDateTime> userSessionJoinDateTime;
-    private final List<Long> userStoredPlayedTimeBeforeJoining;
+    public final PlayedTimeHandler playedTimeHandler;
+    private final List<UUID> playerIndexes;
+    private final List<Boolean> playerAlreadyJoined;
 
     public PlayerDataHandler(Main plugin) {
         this.plugin = plugin;
-        playTimeUsersIndexes = new ArrayList<>();
-        userSessionJoinDateTime = new ArrayList<>();
-        userStoredPlayedTimeBeforeJoining = new ArrayList<>();
+        this.playedTimeHandler = new PlayedTimeHandler(plugin);
+        playerIndexes = new ArrayList<>();
+        playerAlreadyJoined = new ArrayList<>();
     }
 
+    @Override
     public void joinEvent(Player player) {
         // On ouvre la bdd
         con = plugin.bddOpenConn();
 
-        playTimeUsersIndexes.add(player.getUniqueId());
-        userSessionJoinDateTime.add(LocalDateTime.now());
-
-        boolean playerAlreadyJoinded = insertPlayerName(player); // On check si le nom du joueur est déjà enregistré
+        playerIndexes.add(player.getUniqueId());
+        playerAlreadyJoined.add(insertPlayerName(player)); // On check si le nom du joueur est déjà enregistré
         statsPlayerEntryExit(player, true); // On ajoute son entée
         checkPlayerJoinedDate(player); // On check si on dipose de sa date de rejoint
         setPlayerJoinCount(player); // On set le nombre de fois qu'il a rejoint
         plugin.wildCommand.setPlayerStats(player, getPlayerWildCmdStats(player));
 
-        if(playerAlreadyJoinded){
-            userStoredPlayedTimeBeforeJoining.add(Long.valueOf(Database.getUserSetting(player.getUniqueId().toString(), "playedTime")));
-        }else{
-            userStoredPlayedTimeBeforeJoining.add(0L);
-        }
+        playedTimeHandler.joinEvent(player);
 
         // On ferme la bdd
         try {
@@ -60,11 +53,12 @@ public class PlayerDataHandler {
         }
     }
 
+    @Override
     public void quitEvent(Player player) {
         // On ouvre la bdd
         con = plugin.bddOpenConn();
 
-        savePlayedTime(player); // On actualise le temps de jeu du joueur
+        playedTimeHandler.quitEvent(player);
         statsPlayerEntryExit(player, false); // On ajoute son sortie
         savePlayerWildCmdStats(player, plugin.wildCommand.getPlayerStats(player));
 
@@ -207,17 +201,6 @@ public class PlayerDataHandler {
         }
     }
 
-    public void savePlayedTime(Player player) {
-        // On va calculer le temps de jeu du joueur
-        UUID playerUuid = player.getUniqueId();
-        LocalDateTime timeNow = LocalDateTime.now();
-        Duration duration = Duration.between(timeNow, userSessionJoinDateTime.get(playTimeUsersIndexes.indexOf(playerUuid)));
-        long playedTimeInSeconds = Math.abs(duration.toSeconds());
-        long actualPlayedTime = userStoredPlayedTimeBeforeJoining.get(playTimeUsersIndexes.indexOf(playerUuid)) + playedTimeInSeconds;
-
-        Database.setUserSetting(playerUuid.toString(), "playedTime", String.valueOf(actualPlayedTime));
-    }
-
     private List<Object> getPlayerWildCmdStats(Player player) {
         // Indexes:
         // - 0: Nombre d'utilisation du jour
@@ -323,5 +306,9 @@ public class PlayerDataHandler {
             ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
             e.printStackTrace();
         }
+    }
+
+    public boolean playerAlreadyJoined(Player player) {
+        return playerAlreadyJoined.get(playerIndexes.indexOf(player.getUniqueId()));
     }
 }

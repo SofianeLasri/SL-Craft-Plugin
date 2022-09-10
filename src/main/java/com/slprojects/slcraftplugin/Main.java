@@ -4,8 +4,8 @@ import com.slprojects.slcraftplugin.commands.admins.WildReset;
 import com.slprojects.slcraftplugin.commands.publics.LinkCode;
 import com.slprojects.slcraftplugin.commands.publics.Wild;
 import com.slprojects.slcraftplugin.parallelTasks.InternalWebServer;
-import com.slprojects.slcraftplugin.parallelTasks.PeriodicEvent;
-import com.slprojects.slcraftplugin.parallelTasks.PlayerDataHandler;
+import com.slprojects.slcraftplugin.parallelTasks.events.PeriodicEvent;
+import com.slprojects.slcraftplugin.parallelTasks.dataHandlers.PlayerDataHandler;
 import com.slprojects.slcraftplugin.utils.ConsoleLog;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.luckperms.api.LuckPerms;
@@ -13,7 +13,6 @@ import net.luckperms.api.cacheddata.CachedMetaData;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -350,7 +349,7 @@ public final class Main extends JavaPlugin implements Listener {
             ps.executeQuery();
             con.close();
         } catch (Exception e) {
-ConsoleLog.danger("Erreur lors de l'exécution de initDatabase(): " + e);
+            ConsoleLog.danger("Erreur lors de l'exécution de initDatabase(): " + e);
         }
     }
 }
