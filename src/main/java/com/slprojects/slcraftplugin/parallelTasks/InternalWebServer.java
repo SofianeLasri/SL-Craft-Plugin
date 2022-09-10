@@ -19,8 +19,8 @@ public class InternalWebServer {
     public static void startServer(Main plugin) {
         int serverPort = plugin.getConfig().getInt("internal-webserver-port");
 
-        plugin.getServer().getConsoleSender().sendMessage("[" + plugin.getName() + "] Lancement du serveur web intégré sur le port " + ChatColor.GOLD + serverPort);
-        plugin.getServer().getConsoleSender().sendMessage(ChatColor.YELLOW + "[" + plugin.getName() + "] Attention! Le serveur ne fonctionne pas avec les requêtes https!");
+        ConsoleLog.info("Lancement du serveur web intégré sur le port " + ChatColor.GOLD + serverPort);
+        ConsoleLog.warning("Attention! Le serveur ne fonctionne pas avec les requêtes https!");
         // On fait un thread pour écouter le port
         Runnable serverThread = () -> {
             try {
@@ -28,7 +28,7 @@ public class InternalWebServer {
                 while (true) {
                     Socket client = serverSocket.accept();
 
-                    //plugin.getServer().getConsoleSender().sendMessage("Nouvelle connexion sur le port " + ChatColor.GOLD + serverPort);
+                    //ConsoleLog.info("Nouvelle connexion sur le port " + ChatColor.GOLD + serverPort);
 
                     // Get input and output streams to talk to the client
                     BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
