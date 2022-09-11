@@ -10,9 +10,7 @@ import net.luckperms.api.node.types.InheritanceNode;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.ChatColor;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -65,13 +63,13 @@ public class PlayedTimeHandler implements dataHandler {
         Database.setUserSetting(playerUuid.toString(), "playedTime", String.valueOf(actualPlayedTime));
 
         // Vérification pour avoir le rôle habitué
-        if(actualPlayedTime >= requiredPlayedTimeForUpgradingPlayersAccount){
+        if (actualPlayedTime >= requiredPlayedTimeForUpgradingPlayersAccount) {
             String playerGroupName = plugin.luckPermsApi.getPlayerAdapter(Player.class).getMetaData(player).getPrimaryGroup();
-            if(playerGroupName != playersAccountUpgradeGroup.getName()){
+            if (playerGroupName != playersAccountUpgradeGroup.getName()) {
                 player.sendMessage("Ton rôle: " + playerGroupName + " - Groupe visé: " + playersAccountUpgradeGroup.getName());
 
                 Group playerGroup = plugin.luckPermsApi.getGroupManager().getGroup(playerGroupName);
-                if(playerGroup.getWeight().getAsInt() < playersAccountUpgradeGroup.getWeight().getAsInt()){
+                if (playerGroup.getWeight().getAsInt() < playersAccountUpgradeGroup.getWeight().getAsInt()) {
                     User playerLuckPerms = plugin.luckPermsApi.getUserManager().getUser(player.getUniqueId());
 
                     // https://www.spigotmc.org/threads/how-can-i-set-a-players-group-with-luckperms-api.489404/#post-4084060

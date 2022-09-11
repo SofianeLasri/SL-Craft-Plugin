@@ -8,12 +8,12 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.Random;
 
 public class GeneralEvents {
-    public static void fireworkSoundEffect(Player player, Main plugin){
+    public static void fireworkSoundEffect(Player player, Main plugin) {
         int min = 1;
         int max = 25;
         Random random = new Random();
 
-        for(int i = 0; i < 6; i++){
+        for (int i = 0; i < 6; i++) {
             int delay = random.nextInt(max - min + 1) + min;
             new BukkitRunnable() {
                 @Override
