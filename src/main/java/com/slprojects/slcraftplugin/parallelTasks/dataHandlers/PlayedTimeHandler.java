@@ -3,8 +3,10 @@ package com.slprojects.slcraftplugin.parallelTasks.dataHandlers;
 import com.slprojects.slcraftplugin.Main;
 import com.slprojects.slcraftplugin.parallelTasks.events.GeneralEvents;
 import com.slprojects.slcraftplugin.utils.Database;
+import net.luckperms.api.model.data.DataMutateResult;
 import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.user.User;
+import net.luckperms.api.node.types.InheritanceNode;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.ChatColor;
@@ -63,7 +65,6 @@ public class PlayedTimeHandler implements dataHandler {
         Database.setUserSetting(playerUuid.toString(), "playedTime", String.valueOf(actualPlayedTime));
 
         // Vérification pour avoir le rôle habitué
-        // TODO: Ne sauvegarde pas. :/
         if(actualPlayedTime >= requiredPlayedTimeForUpgradingPlayersAccount){
             String playerGroupName = plugin.luckPermsApi.getPlayerAdapter(Player.class).getMetaData(player).getPrimaryGroup();
             if(playerGroupName != playersAccountUpgradeGroup.getName()){
@@ -72,7 +73,10 @@ public class PlayedTimeHandler implements dataHandler {
                 Group playerGroup = plugin.luckPermsApi.getGroupManager().getGroup(playerGroupName);
                 if(playerGroup.getWeight().getAsInt() < playersAccountUpgradeGroup.getWeight().getAsInt()){
                     User playerLuckPerms = plugin.luckPermsApi.getUserManager().getUser(player.getUniqueId());
-                    playerLuckPerms.setPrimaryGroup(playersAccountUpgradeGroup.getName());
+
+                    // https://www.spigotmc.org/threads/how-can-i-set-a-players-group-with-luckperms-api.489404/#post-4084060
+                    InheritanceNode node = InheritanceNode.builder(playersAccountUpgradeGroup).value(true).build();
+                    DataMutateResult result = playerLuckPerms.data().add(node);
                     plugin.luckPermsApi.getUserManager().saveUser(playerLuckPerms);
 
                     int requiredPlayedTimeInHours = requiredPlayedTimeForUpgradingPlayersAccount / 60 / 60;
