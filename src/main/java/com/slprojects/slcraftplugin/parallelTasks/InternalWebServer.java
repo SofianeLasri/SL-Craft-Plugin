@@ -1,6 +1,7 @@
 package com.slprojects.slcraftplugin.parallelTasks;
 
 import com.slprojects.slcraftplugin.Main;
+import com.slprojects.slcraftplugin.utils.ConsoleLog;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.json.simple.JSONObject;
@@ -13,13 +14,13 @@ import java.net.Socket;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 
-public class internalWebServer {
-    @SuppressWarnings({ "unchecked", "InfiniteLoopStatement" })
-    public static void startServer(Main plugin){
+public class InternalWebServer {
+    @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
+    public static void startServer(Main plugin) {
         int serverPort = plugin.getConfig().getInt("internal-webserver-port");
 
-        plugin.getServer().getConsoleSender().sendMessage("["+ plugin.getName() +"] Lancement du serveur web intégré sur le port " + ChatColor.GOLD + serverPort);
-        plugin.getServer().getConsoleSender().sendMessage(ChatColor.YELLOW + "["+ plugin.getName() +"] Attention! Le serveur ne fonctionne pas avec les requêtes https!");
+        ConsoleLog.info("Lancement du serveur web intégré sur le port " + ChatColor.GOLD + serverPort);
+        ConsoleLog.warning("Attention! Le serveur ne fonctionne pas avec les requêtes https!");
         // On fait un thread pour écouter le port
         Runnable serverThread = () -> {
             try {
@@ -27,7 +28,7 @@ public class internalWebServer {
                 while (true) {
                     Socket client = serverSocket.accept();
 
-                    //plugin.getServer().getConsoleSender().sendMessage("Nouvelle connexion sur le port " + ChatColor.GOLD + serverPort);
+                    //ConsoleLog.info("Nouvelle connexion sur le port " + ChatColor.GOLD + serverPort);
 
                     // Get input and output streams to talk to the client
                     BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
@@ -101,7 +102,7 @@ public class internalWebServer {
                             break;
                         default:
                             answer.put("status", "error");
-                            answer.put("message", "Commande "+commandName+" inconnue");
+                            answer.put("message", "Commande " + commandName + " inconnue");
                             out.print(answer.toJSONString());
                             break;
                     }
@@ -113,7 +114,7 @@ public class internalWebServer {
                     client.close(); // Close the socket itself
                 }
             } catch (IOException e) {
-                plugin.getServer().getConsoleSender().sendMessage(ChatColor.RED + "["+ plugin.getName() +"] Erreur lors de l'écoute du port " + ChatColor.GOLD  + serverPort);
+                ConsoleLog.danger("Erreur lors de l'écoute du port " + ChatColor.GOLD + serverPort);
                 e.printStackTrace();
 
                 // On va logger le message sur discord
@@ -125,7 +126,7 @@ public class internalWebServer {
                     urlString = plugin.getConfig().getString("discordBot-api-url") + "mc/error/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
                     relaunchListener(plugin);
                 } catch (UnsupportedEncodingException ex) {
-                    plugin.getServer().getConsoleSender().sendMessage(ChatColor.RED + "["+ plugin.getName() +"] Erreur lors de l'encodage du message. Func waitForDiscordMsg::startServer(Main plugin)");
+                    ConsoleLog.danger("Erreur lors de l'encodage du message. Func waitForDiscordMsg::startServer(Main plugin)");
                     ex.printStackTrace();
                 }
                 plugin.getHttp(urlString);
