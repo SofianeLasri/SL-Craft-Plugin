@@ -29,11 +29,21 @@ public class PlayedTimeHandler implements dataHandler {
 
     public PlayedTimeHandler(Main plugin) {
         this.plugin = plugin;
-        usersIndexes = new ArrayList<>();
-        userSessionJoinDateTime = new ArrayList<>();
-        userStoredPlayedTimeBeforeJoining = new ArrayList<>();
-        requiredPlayedTimeForUpgradingPlayersAccount = plugin.getConfig().getInt("stats.required-played-time-for-upgrading-players-account");
-        playersAccountUpgradeGroup = Main.luckPermsApi.getGroupManager().getGroup(plugin.getConfig().getString("stats.players-account-upgrade-role"));
+        String playersAccountUpgradeRole = plugin.getConfig().getString("stats.players-account-upgrade-role");
+
+        if (playersAccountUpgradeRole != null) {
+            usersIndexes = new ArrayList<>();
+            userSessionJoinDateTime = new ArrayList<>();
+            userStoredPlayedTimeBeforeJoining = new ArrayList<>();
+            requiredPlayedTimeForUpgradingPlayersAccount = plugin.getConfig().getInt("stats.required-played-time-for-upgrading-players-account");
+            playersAccountUpgradeGroup = Main.luckPermsApi.getGroupManager().getGroup(playersAccountUpgradeRole);
+
+            if (playersAccountUpgradeGroup == null) {
+                throw new RuntimeException("Le groupe " + playersAccountUpgradeRole + " n'existe pas !");
+            }
+        } else {
+            throw new RuntimeException("La configuration stats.required-played-time-for-upgrading-players-account n'existe pas !");
+        }
     }
 
     @Override
@@ -84,36 +94,47 @@ public class PlayedTimeHandler implements dataHandler {
 
         if (actualPlayedTime >= requiredPlayedTimeForUpgradingPlayersAccount) {
             String playerGroupName = Main.luckPermsApi.getPlayerAdapter(Player.class).getMetaData(player).getPrimaryGroup();
-            if (!Objects.equals(playerGroupName, playersAccountUpgradeGroup.getName())) {
 
+            if (playerGroupName != null && !Objects.equals(playerGroupName, playersAccountUpgradeGroup.getName())) {
                 Group playerGroup = Main.luckPermsApi.getGroupManager().getGroup(playerGroupName);
-                if (playerGroup.getWeight().getAsInt() < playersAccountUpgradeGroup.getWeight().getAsInt()) {
-                    ConsoleLog.info(ChatColor.GREEN + player.getName() + ChatColor.LIGHT_PURPLE + " a débloqué le rôle des joueurs " + ChatColor.GOLD + "habitués" + ChatColor.LIGHT_PURPLE + "!");
-                    User playerLuckPerms = Main.luckPermsApi.getUserManager().getUser(player.getUniqueId());
+                if (playerGroup == null) {
+                    throw new RuntimeException("Le groupe " + playerGroupName + " n'existe pas !");
+                }
 
-                    // https://www.spigotmc.org/threads/how-can-i-set-a-players-group-with-luckperms-api.489404/#post-4084060
-                    InheritanceNode node = InheritanceNode.builder(playersAccountUpgradeGroup).value(true).build();
-                    playerLuckPerms.data().add(node);
-                    Main.luckPermsApi.getUserManager().saveUser(playerLuckPerms);
-
-                    int requiredPlayedTimeInHours = requiredPlayedTimeForUpgradingPlayersAccount / 60 / 60;
-                    player.sendMessage(ChatColor.GREEN + "Bravo et un grand merci à toi " + ChatColor.YELLOW + player.getName() + ChatColor.GREEN + "!");
-                    player.sendMessage(ChatColor.GREEN + "Tu as joué pendant plus de" + ChatColor.GOLD + requiredPlayedTimeInHours + "H " + ChatColor.GREEN + "sur le serveur !!!");
-                    player.sendMessage("Pour te récompenser, nous te donnons le rôle des joueurs " + ChatColor.GOLD + "habitués" + ChatColor.RESET + "!");
-                    player.sendMessage(ChatColor.GREEN + "Ce rôle te donne accès à un plus grand nombre de homes et à une plus grande surface utilisable pour protéger tes constructions avec RedProtect.");
-
-                    for (Player connectedPlayer : plugin.getServer().getOnlinePlayers()) {
-                        if (connectedPlayer != player) {
-                            connectedPlayer.sendMessage(ChatColor.GREEN + player.getName() + ChatColor.LIGHT_PURPLE + " a débloqué le rôle des joueurs " + ChatColor.GOLD + "habitués" + ChatColor.LIGHT_PURPLE + "!");
+                if (playerGroup.getWeight().isPresent() && playersAccountUpgradeGroup.getWeight().isPresent()) {
+                    if (playerGroup.getWeight().getAsInt() < playersAccountUpgradeGroup.getWeight().getAsInt()) {
+                        ConsoleLog.info(ChatColor.GREEN + player.getName() + ChatColor.LIGHT_PURPLE + " a débloqué le rôle des joueurs " + ChatColor.GOLD + "habitués" + ChatColor.LIGHT_PURPLE + "!");
+                        User playerLuckPerms = Main.luckPermsApi.getUserManager().getUser(player.getUniqueId());
+                        if (playerLuckPerms == null) {
+                            throw new RuntimeException("LuckPerms ne semble pas disposer de donnée sur le joueur " + player.getName() + " UUID:" + player.getUniqueId());
                         }
-                        player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 100, 2);
+
+                        // https://www.spigotmc.org/threads/how-can-i-set-a-players-group-with-luckperms-api.489404/#post-4084060
+                        InheritanceNode node = InheritanceNode.builder(playersAccountUpgradeGroup).value(true).build();
+                        playerLuckPerms.data().add(node);
+                        Main.luckPermsApi.getUserManager().saveUser(playerLuckPerms);
+
+                        int requiredPlayedTimeInHours = requiredPlayedTimeForUpgradingPlayersAccount / 60 / 60;
+                        player.sendMessage(ChatColor.GREEN + "Bravo et un grand merci à toi " + ChatColor.YELLOW + player.getName() + ChatColor.GREEN + "!");
+                        player.sendMessage(ChatColor.GREEN + "Tu as joué pendant plus de" + ChatColor.GOLD + requiredPlayedTimeInHours + "H " + ChatColor.GREEN + "sur le serveur !!!");
+                        player.sendMessage("Pour te récompenser, nous te donnons le rôle des joueurs " + ChatColor.GOLD + "habitués" + ChatColor.RESET + "!");
+                        player.sendMessage(ChatColor.GREEN + "Ce rôle te donne accès à un plus grand nombre de homes et à une plus grande surface utilisable pour protéger tes constructions avec RedProtect.");
+
+                        for (Player connectedPlayer : plugin.getServer().getOnlinePlayers()) {
+                            if (connectedPlayer != player) {
+                                connectedPlayer.sendMessage(ChatColor.GREEN + player.getName() + ChatColor.LIGHT_PURPLE + " a débloqué le rôle des joueurs " + ChatColor.GOLD + "habitués" + ChatColor.LIGHT_PURPLE + "!");
+                            }
+                            player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 100, 2);
+                        }
+
+                        plugin.sendMessageToDiscord("**" + player.getName() + "** a débloqué le rôle des joueurs **habitués**! \uD83E\uDD73");
+                        plugin.sendMessageToDiscord("Un grand merci à toi qui a passé plus de 20H de jeu sur le serveur!  ❤");
+
+                        // Feux d'artifices
+                        GeneralEvents.fireworkSoundEffect(player, plugin);
                     }
-
-                    plugin.sendMessageToDiscord("**" + player.getName() + "** a débloqué le rôle des joueurs **habitués**! \uD83E\uDD73");
-                    plugin.sendMessageToDiscord("Un grand merci à toi qui a passé plus de 20H de jeu sur le serveur!  ❤");
-
-                    // Feux d'artifices
-                    GeneralEvents.fireworkSoundEffect(player, plugin);
+                } else {
+                    ConsoleLog.danger("Impossible de vérifier la priorité du ou des rôles suivants : " + playerGroupName + " & " + playersAccountUpgradeGroup.getName());
                 }
             }
         }
