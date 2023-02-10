@@ -322,7 +322,7 @@ public final class Main extends JavaPlugin implements Listener {
             reloadConfig();
         }
 
-        // 1.6.1
+        // 1.6.1 - 1.6.2
         config.options().copyDefaults(true);
         saveConfig();
         reloadConfig();

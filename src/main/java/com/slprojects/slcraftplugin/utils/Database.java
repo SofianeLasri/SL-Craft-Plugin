@@ -75,7 +75,7 @@ public class Database {
 
         try {
             if (isEntryExists) {
-                PreparedStatement updateEntry = con.prepareStatement("UPDATE site_userSetting SET value = ? WHERE uuid = ? AND name = ?");
+                PreparedStatement updateEntry = con.prepareStatement("UPDATE " + userSettingsTabName + " SET value = ? WHERE uuid = ? AND name = ?");
                 updateEntry.setString(1, value);
                 updateEntry.setString(2, uuid);
                 updateEntry.setString(3, key);
@@ -114,7 +114,7 @@ public class Database {
         }
 
         try {
-            PreparedStatement insertEntry = con.prepareStatement("INSERT INTO site_userSetting (uuid, name, value) VALUES (?, ?, ?)");
+            PreparedStatement insertEntry = con.prepareStatement("INSERT INTO " + userSettingsTabName + " (uuid, name, value) VALUES (?, ?, ?)");
             insertEntry.setString(1, uuid);
             insertEntry.setString(2, key);
             insertEntry.setString(3, value);
