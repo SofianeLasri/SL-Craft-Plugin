@@ -15,6 +15,11 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 
 public class InternalWebServer {
+    /**
+     * Lance le serveur web intégré
+     *
+     * @param plugin Instance du plugin
+     */
     @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
     public static void startServer(Main plugin) {
         int serverPort = plugin.getConfig().getInt("internal-webserver-port");

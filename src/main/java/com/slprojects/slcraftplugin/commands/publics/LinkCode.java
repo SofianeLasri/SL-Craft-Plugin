@@ -25,6 +25,15 @@ public class LinkCode implements CommandExecutor {
         this.plugin = plugin;
     }
 
+    /**
+     * Commande /linkcode
+     *
+     * @param sender CommandSender
+     * @param command Command
+     * @param label String
+     * @param args String[]
+     * @return boolean
+     */
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (sender instanceof Player) {

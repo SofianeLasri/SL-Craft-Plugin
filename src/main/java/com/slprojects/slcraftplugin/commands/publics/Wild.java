@@ -34,6 +34,11 @@ public class Wild implements CommandExecutor {
     private final List<String> excludedBiomes;
     private final String wildWorld;
 
+    /**
+     * Commande /wild
+     *
+     * @param plugin Main
+     */
     @SuppressWarnings("unchecked")
     public Wild(Main plugin) {
         // On récupère la classe parente pour les paramètres
@@ -163,7 +168,7 @@ public class Wild implements CommandExecutor {
             // Indexes:
             // - 0: Nombre d'utilisation du jour
             // - 1: Date de la dernière commande
-            List<Object> stats = new ArrayList<Object>();
+            List<Object> stats = new ArrayList<>();
             stats.add(wildUsersAskNum.get(playerIndex));
             stats.add(wildUsersLastAsked.get(playerIndex));
             return stats;

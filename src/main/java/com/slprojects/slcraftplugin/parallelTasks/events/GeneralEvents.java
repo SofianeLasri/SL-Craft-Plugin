@@ -8,7 +8,13 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.Random;
 
 public class GeneralEvents {
-    public static void fireworkSoundEffect(Player player, Main plugin) {
+    /**
+     * Joue un son de feu d'artifice
+     *
+     * @param player Joueur
+     * @param plugin Plugin
+     */
+    public static void playFireworkSoundEffect(Player player, Main plugin) {
         int min = 1;
         int max = 25;
         Random random = new Random();

@@ -20,13 +20,22 @@ public class WildReset implements CommandExecutor {
         this.plugin = plugin;
     }
 
+    /**
+     * Commande /wildreset
+     *
+     * @param sender CommandSender
+     * @param command Command
+     * @param label String
+     * @param args String[]
+     * @return boolean
+     */
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
         if (args.length > 0) {
             for (int i = 0; i < args.length; i++) {
                 Player player = plugin.getServer().getPlayer(args[i]);
                 if (player != null) {
-                    List<Object> reset = new ArrayList<Object>() {
+                    List<Object> reset = new ArrayList<>() {
                         {
                             add(0);
                             add(LocalDateTime.parse("2001-12-11 12:30", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));

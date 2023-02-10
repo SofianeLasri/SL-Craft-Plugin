@@ -214,7 +214,7 @@ public class PlayerDataHandler implements dataHandler {
             if (lastUsedResult.next()) {
                 LocalDateTime lastUsed = Timestamp.valueOf(lastUsedResult.getString("value")).toLocalDateTime();
                 if (ChronoUnit.HOURS.between(lastUsed, LocalDateTime.now()) > 24) {
-                    return new ArrayList<Object>() {
+                    return new ArrayList<>() {
                         {
                             add(0);
                             add(lastUsed);
@@ -226,7 +226,7 @@ public class PlayerDataHandler implements dataHandler {
                     ResultSet askNumResult = playerAskNum.executeQuery();
 
                     if (askNumResult.next()) {
-                        return new ArrayList<Object>() {
+                        return new ArrayList<>() {
                             {
                                 add(Integer.valueOf(askNumResult.getString("value")));
                                 add(lastUsed);
@@ -236,7 +236,7 @@ public class PlayerDataHandler implements dataHandler {
                         ConsoleLog.warning("Func savePlayerData::getPlayerWildCmdStats(Player player)");
                         ConsoleLog.warning("Fonctionnement anormal! On dispose de la date de 'wildCmdLastUsed' mais pas de 'wildCmdAskNum' pour le joueur " + player.getName() + " UUID: " + player.getUniqueId());
                         ConsoleLog.warning("Passage de 'wildCmdAskNum' à 0.");
-                        return new ArrayList<Object>() {
+                        return new ArrayList<>() {
                             {
                                 add(0);
                                 add(lastUsed);
@@ -260,7 +260,7 @@ public class PlayerDataHandler implements dataHandler {
                 insertWildCmdAskNum.setString(2, "0");
                 insertWildCmdAskNum.executeQuery();
 
-                return new ArrayList<Object>() {
+                return new ArrayList<>() {
                     {
                         add(0);
                         add(dateBidon);
@@ -277,7 +277,7 @@ public class PlayerDataHandler implements dataHandler {
         ConsoleLog.warning("Fonctionnement anormal! La recherche dans la bdd a échouée pour le joueur " + player.getName() + " UUID: " + player.getUniqueId());
         ConsoleLog.warning("Passage de 'wildCmdLastUsed' au 11 décembre 2001 et 'wildCmdAskNum' à 0");
 
-        return new ArrayList<Object>() {
+        return new ArrayList<>() {
             {
                 add(0);
                 add(LocalDateTime.parse("2001-12-11 12:30", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));

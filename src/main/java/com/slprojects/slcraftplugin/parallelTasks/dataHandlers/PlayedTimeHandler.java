@@ -27,6 +27,11 @@ public class PlayedTimeHandler implements dataHandler {
     private final int requiredPlayedTimeForUpgradingPlayersAccount;
     private final Group playersAccountUpgradeGroup;
 
+    /**
+     * Gère le temps de jeu des joueurs
+     *
+     * @param plugin Plugin
+     */
     public PlayedTimeHandler(Main plugin) {
         this.plugin = plugin;
         String playersAccountUpgradeRole = plugin.getConfig().getString("stats.players-account-upgrade-role");
@@ -46,6 +51,11 @@ public class PlayedTimeHandler implements dataHandler {
         }
     }
 
+    /**
+     * Gestion de l'arrivée d'un joueur
+     *
+     * @param player Joueur
+     */
     @Override
     public void joinEvent(Player player) {
         usersIndexes.add(player.getUniqueId());
@@ -65,11 +75,21 @@ public class PlayedTimeHandler implements dataHandler {
         }
     }
 
+    /**
+     * Gestion de la déconnexion d'un joueur
+     *
+     * @param player Joueur
+     */
     @Override
     public void quitEvent(Player player) {
         savePlayedTime(player); // On actualise le temps de jeu du joueur
     }
 
+    /**
+     * Sauvegarde le temps de jeu du joueur
+     *
+     * @param player Joueur
+     */
     public void savePlayedTime(Player player) {
         // On va calculer le temps de jeu du joueur
         UUID playerUuid = player.getUniqueId();
@@ -84,6 +104,11 @@ public class PlayedTimeHandler implements dataHandler {
         checkPlayerTime(player);
     }
 
+    /**
+     * Vérifie si le joueur a débloqué le rôle habitué
+     *
+     * @param player Joueur
+     */
     public void checkPlayerTime(Player player) {
         // On va calculer le temps de jeu du joueur
         UUID playerUuid = player.getUniqueId();
@@ -131,7 +156,7 @@ public class PlayedTimeHandler implements dataHandler {
                         plugin.sendMessageToDiscord("Un grand merci à toi qui a passé plus de 20H de jeu sur le serveur!  ❤");
 
                         // Feux d'artifices
-                        GeneralEvents.fireworkSoundEffect(player, plugin);
+                        GeneralEvents.playFireworkSoundEffect(player, plugin);
                     }
                 } else {
                     ConsoleLog.danger("Impossible de vérifier la priorité du ou des rôles suivants : " + playerGroupName + " & " + playersAccountUpgradeGroup.getName());

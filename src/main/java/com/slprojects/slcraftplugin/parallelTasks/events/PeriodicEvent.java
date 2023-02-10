@@ -9,12 +9,20 @@ public class PeriodicEvent {
     private boolean doesTheEventIsCurrentlyRunning = false;
     private final int periodicEventCallTime;
 
+    /**
+     * Évènement périodique
+     *
+     * @param plugin Plugin
+     */
     public PeriodicEvent(Main plugin) {
         this.plugin = plugin;
         startPeriodicEvent();
         periodicEventCallTime = plugin.getConfig().getInt("periodic-event-call-time") * plugin.getConfig().getInt("ticks-per-seconds");
     }
 
+    /**
+     * Lance l'évènement périodique
+     */
     public void startPeriodicEvent() {
         if (doesTheEventIsCurrentlyRunning)
             throw new RuntimeException("L'exécution de l'évènement périodique est déjà enclanchée.");
@@ -29,6 +37,9 @@ public class PeriodicEvent {
         }.runTaskLater(plugin, (periodicEventCallTime));
     }
 
+    /**
+     * Évènement périodique
+     */
     private void periodicEvent() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             plugin.playerDataHandler.playedTimeHandler.savePlayedTime(player);
