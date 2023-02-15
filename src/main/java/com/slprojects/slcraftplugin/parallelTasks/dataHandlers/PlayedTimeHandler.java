@@ -114,6 +114,7 @@ public class PlayedTimeHandler implements dataHandler {
         UUID playerUuid = player.getUniqueId();
         LocalDateTime timeNow = LocalDateTime.now();
         Duration duration = Duration.between(timeNow, userSessionJoinDateTime.get(usersIndexes.indexOf(playerUuid)));
+
         long playedTimeInSeconds = Math.abs(duration.toSeconds());
         long actualPlayedTime = userStoredPlayedTimeBeforeJoining.get(usersIndexes.indexOf(playerUuid)) + playedTimeInSeconds;
 
@@ -122,6 +123,7 @@ public class PlayedTimeHandler implements dataHandler {
 
             if (playerGroupName != null && !Objects.equals(playerGroupName, playersAccountUpgradeGroup.getName())) {
                 Group playerGroup = Main.luckPermsApi.getGroupManager().getGroup(playerGroupName);
+
                 if (playerGroup == null) {
                     throw new RuntimeException("Le groupe " + playerGroupName + " n'existe pas !");
                 }
@@ -130,6 +132,7 @@ public class PlayedTimeHandler implements dataHandler {
                     if (playerGroup.getWeight().getAsInt() < playersAccountUpgradeGroup.getWeight().getAsInt()) {
                         ConsoleLog.info(ChatColor.GREEN + player.getName() + ChatColor.LIGHT_PURPLE + " a débloqué le rôle des joueurs " + ChatColor.GOLD + "habitués" + ChatColor.LIGHT_PURPLE + "!");
                         User playerLuckPerms = Main.luckPermsApi.getUserManager().getUser(player.getUniqueId());
+
                         if (playerLuckPerms == null) {
                             throw new RuntimeException("LuckPerms ne semble pas disposer de donnée sur le joueur " + player.getName() + " UUID:" + player.getUniqueId());
                         }
@@ -140,6 +143,7 @@ public class PlayedTimeHandler implements dataHandler {
                         Main.luckPermsApi.getUserManager().saveUser(playerLuckPerms);
 
                         int requiredPlayedTimeInHours = requiredPlayedTimeForUpgradingPlayersAccount / 60 / 60;
+
                         player.sendMessage(ChatColor.GREEN + "Bravo et un grand merci à toi " + ChatColor.YELLOW + player.getName() + ChatColor.GREEN + "!");
                         player.sendMessage(ChatColor.GREEN + "Tu as joué pendant plus de" + ChatColor.GOLD + requiredPlayedTimeInHours + "H " + ChatColor.GREEN + "sur le serveur !!!");
                         player.sendMessage("Pour te récompenser, nous te donnons le rôle des joueurs " + ChatColor.GOLD + "habitués" + ChatColor.RESET + "!");
