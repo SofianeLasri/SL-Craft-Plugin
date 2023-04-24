@@ -7,6 +7,7 @@ import com.slprojects.slcraftplugin.parallelTasks.InternalWebServer;
 import com.slprojects.slcraftplugin.parallelTasks.events.PeriodicEvent;
 import com.slprojects.slcraftplugin.parallelTasks.dataHandlers.PlayerDataHandler;
 import com.slprojects.slcraftplugin.utils.ConsoleLog;
+import com.slprojects.slcraftplugin.utils.Database;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.cacheddata.CachedMetaData;
@@ -27,6 +28,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.json.simple.JSONObject;
 import org.mariadb.jdbc.MariaDbPoolDataSource;
 
+import javax.xml.crypto.Data;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
@@ -52,6 +54,7 @@ public final class Main extends JavaPlugin implements Listener {
     public PlayerDataHandler playerDataHandler;
     public Wild wildCommand;
     public PeriodicEvent periodicEvent;
+    public static Connection databaseConnection = null;
 
     @Override
     public void onEnable() {
@@ -83,6 +86,11 @@ public final class Main extends JavaPlugin implements Listener {
         }
 
         // Plugin startup logic
+        try {
+            databaseConnection = Database.bddOpenConn();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         saveDefaultConfig();
         reloadConfig();
         config = getConfig();
@@ -113,6 +121,12 @@ public final class Main extends JavaPlugin implements Listener {
         ConsoleLog.danger("Plugin désactivé, au revoir!");
 
         getServer().getOnlinePlayers().forEach(player -> playerDataHandler.quitEvent(player));
+
+        try {
+            Database.bddCloseConn();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

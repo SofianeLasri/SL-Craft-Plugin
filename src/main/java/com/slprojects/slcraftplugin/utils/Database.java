@@ -1,20 +1,20 @@
 package com.slprojects.slcraftplugin.utils;
 
-import com.slprojects.slcraftplugin.Main;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.plugin.Plugin;
-import org.mariadb.jdbc.MariaDbPoolDataSource;
+import com.slprojects.slcraftplugin.models.UserSetting;
+import com.slprojects.slcraftplugin.utils.database.Configuration;
+import org.bjloquent.Connector;
+import org.bjloquent.Model;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-
-import static org.bukkit.Bukkit.getServer;
+import java.util.List;
 
 @SuppressWarnings("UnusedReturnValue")
 public class Database {
     static final private String userSettingsTabName = "site_userSetting";
+    static Connection connection = null;
+    static Connector jLoquentConnector = null;
 
     /**
      * Récupère une valeur dans la table site_userSetting
@@ -24,36 +24,18 @@ public class Database {
      * @return Valeur de la clé
      */
     public static String getUserSetting(String uuid, String key) {
-        Connection con;
-        try {
-            con = bddOpenConn();
-        } catch (SQLException e) {
-            ConsoleLog.danger("Impossible d'ouvrir la connexion à la bdd.");
-            throw new RuntimeException(e);
-        }
-        String returnValue = null;
+        List<UserSetting> settings = Model.where(
+                UserSetting.class,
+                new String[]{"uuid", "name"},
+                new String[]{"=", "="},
+                new String[]{uuid, key}
+        );
 
-        try {
-            PreparedStatement query = con.prepareStatement("SELECT * FROM " + userSettingsTabName + " WHERE uuid = ? AND name = ?");
-            query.setString(1, uuid);
-            query.setString(2, key);
-            ResultSet result = query.executeQuery();
-
-            if (result.next()) {
-                returnValue = result.getString("value");
-            }
-        } catch (SQLException e) {
-            ConsoleLog.danger("Erreur lors de l'exécution de la requête sql." + e);
+        if (settings.size() != 1) {
+            return null;
         }
 
-        // On ferme la bdd
-        try {
-            con.close();
-        } catch (SQLException e) {
-            ConsoleLog.danger("Impossible de fermer la connexion à la bdd.");
-            e.printStackTrace();
-        }
-        return returnValue;
+        return (settings.get(0)).getValue();
     }
 
     /**
@@ -139,37 +121,17 @@ public class Database {
      * @return Connection
      */
     public static Connection bddOpenConn() throws SQLException {
-        Plugin plugin = getServer().getPluginManager().getPlugin(Main.pluginName);
-        if (plugin == null) {
-            throw new IllegalStateException("Le plugin " + Main.pluginName + " n'a pas été trouvé.");
-        }
-
-        FileConfiguration config = plugin.getConfig();
-
-        String connectionString = "jdbc:mariadb://" + config.getString("database.host");
-        connectionString += "/" + config.getString("database.database");
-        connectionString += "?user=" + config.getString("database.user");
-        connectionString += "&password=" + config.getString("database.password");
-        connectionString += "&maxPoolSize=10";
-
-        MariaDbPoolDataSource dataSource = new MariaDbPoolDataSource(connectionString);
-
-        try (Connection conn = dataSource.getConnection()) {
-            if (!conn.isValid(1000)) {
-                throw new SQLException("Could not establish database connection.");
-            }
-        }
-
-        testDataSource(dataSource);
-
-        return dataSource.getConnection();
+        jLoquentConnector = Connector.getInstance();
+        jLoquentConnector.setDBConfig(new Configuration());
+        connection = jLoquentConnector.open();
+        return connection;
     }
 
-    private static void testDataSource(MariaDbPoolDataSource dataSource) throws SQLException {
-        try (Connection conn = dataSource.getConnection()) {
-            if (!conn.isValid(1000)) {
-                throw new SQLException("Erreur lors de la connexion à la base de données.");
-            }
-        }
+    /**
+     * Ferme la connexion à la base de données
+     */
+    public static void bddCloseConn() throws SQLException {
+        connection.close();
+        jLoquentConnector.close();
     }
 }

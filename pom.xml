@@ -67,6 +67,10 @@
             <id>placeholderapi</id>
             <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
         </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -80,7 +84,7 @@
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
-            <version>3.0.2-rc</version>
+            <version>3.1.2</version>
         </dependency>
         <dependency>
             <groupId>me.clip</groupId>
@@ -93,6 +97,12 @@
             <artifactId>api</artifactId>
             <version>5.4</version>
             <scope>provided</scope>
+        </dependency>
+        <!-- Version du 22 Avril 2023 -->
+        <dependency>
+            <groupId>com.github.SofianeLasri</groupId>
+            <artifactId>bjLoquent</artifactId>
+            <version>6729e4b</version>
         </dependency>
     </dependencies>
 </project>
