@@ -9,7 +9,7 @@ public class UserSetting extends Model {
 
     public UserSetting() {
         super.tableName = "site_userSetting";
-        super.primaryKeyName = "uuid";
+        super.primaryKey = new String[]{"uuid", "name"};
     }
 
     public String getUuid() {

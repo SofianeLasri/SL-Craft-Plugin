@@ -2,6 +2,7 @@ package com.slprojects.slcraftplugin.utils;
 
 import com.slprojects.slcraftplugin.models.UserSetting;
 import com.slprojects.slcraftplugin.utils.database.Configuration;
+import net.luckperms.api.model.user.User;
 import org.bjloquent.Connector;
 import org.bjloquent.Model;
 
@@ -46,36 +47,23 @@ public class Database {
      * @param value Valeur de la clé
      */
     public static void setUserSetting(String uuid, String key, String value) {
-        Connection con;
-        try {
-            con = bddOpenConn();
-        } catch (SQLException e) {
-            ConsoleLog.danger("Impossible d'ouvrir la connexion à la bdd.");
-            throw new RuntimeException(e);
-        }
-        boolean isEntryExists = (getUserSetting(uuid, key) != null);
+        List<UserSetting> userSettingExists = Model.where(
+                UserSetting.class,
+                new String[]{"uuid", "name"},
+                new String[]{"=", "="},
+                new String[]{uuid, key}
+        );
 
-        try {
-            if (isEntryExists) {
-                PreparedStatement updateEntry = con.prepareStatement("UPDATE " + userSettingsTabName + " SET value = ? WHERE uuid = ? AND name = ?");
-                updateEntry.setString(1, value);
-                updateEntry.setString(2, uuid);
-                updateEntry.setString(3, key);
-                updateEntry.executeUpdate();
-            } else {
-                insertUserSettingEntry(uuid, key, value);
-            }
-        } catch (SQLException e) {
-            ConsoleLog.danger("Erreur lors de l'exécution de la requête sql.");
-            throw new RuntimeException(e);
-        }
-
-        // On ferme la bdd
-        try {
-            con.close();
-        } catch (SQLException e) {
-            ConsoleLog.danger("Impossible de fermer la connexion à la bdd.");
-            throw new RuntimeException(e);
+        if (userSettingExists.size() == 0) {
+            UserSetting userSetting = new UserSetting();
+            userSetting.setUuid(uuid);
+            userSetting.setName(key);
+            userSetting.setValue(value);
+            userSetting.create();
+        } else {
+            UserSetting userSetting = userSettingExists.get(0);
+            userSetting.setValue(value);
+            userSetting.save();
         }
     }
 

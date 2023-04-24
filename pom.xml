@@ -98,11 +98,10 @@
             <version>5.4</version>
             <scope>provided</scope>
         </dependency>
-        <!-- Version du 22 Avril 2023 -->
         <dependency>
             <groupId>com.github.SofianeLasri</groupId>
             <artifactId>bjLoquent</artifactId>
-            <version>6729e4b</version>
+            <version>db12baa</version>
         </dependency>
     </dependencies>
 </project>
