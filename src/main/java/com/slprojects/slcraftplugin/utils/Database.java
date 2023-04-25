@@ -68,42 +68,6 @@ public class Database {
     }
 
     /**
-     * Ajoute une entrée dans la table site_userSetting
-     *
-     * @param uuid  UUID du joueur
-     * @param key   Nom de la clé
-     * @param value Valeur de la clé
-     */
-    private static void insertUserSettingEntry(String uuid, String key, String value) {
-        Connection con;
-        try {
-            con = bddOpenConn();
-        } catch (SQLException e) {
-            ConsoleLog.danger("Erreur lors de l'ouverture de la connexion à la bdd.");
-            throw new RuntimeException(e);
-        }
-
-        try {
-            PreparedStatement insertEntry = con.prepareStatement("INSERT INTO " + userSettingsTabName + " (uuid, name, value) VALUES (?, ?, ?)");
-            insertEntry.setString(1, uuid);
-            insertEntry.setString(2, key);
-            insertEntry.setString(3, value);
-            insertEntry.executeQuery();
-        } catch (SQLException e) {
-            ConsoleLog.danger("Erreur lors de l'exécution de la requête sql.");
-            throw new RuntimeException(e);
-        }
-
-        // On ferme la bdd
-        try {
-            con.close();
-        } catch (SQLException e) {
-            ConsoleLog.danger("Impossible de fermer la connexion à la bdd.");
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
      * Ouvre une connexion à la base de données
      *
      * @return Connection
@@ -121,5 +85,28 @@ public class Database {
     public static void bddCloseConn() throws SQLException {
         connection.close();
         jLoquentConnector.close();
+    }
+
+    public static void initDatabase() {
+        try {
+            PreparedStatement ps = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `site_userSetting` (\n" +
+                    "  `uuid` varchar(36) NOT NULL DEFAULT '',\n" +
+                    "  `name` varchar(128) NOT NULL,\n" +
+                    "  `value` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,\n" +
+                    "  PRIMARY KEY (`uuid`,`name`) USING BTREE\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+            ps.executeQuery();
+            ps = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `site_linkCode` (\n" +
+                    " `uuid` VARCHAR(36) NOT NULL,\n" +
+                    " `code` VARCHAR(8) NOT NULL,\n" +
+                    " `time` TIMESTAMP NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n" +
+                    " `used` BOOLEAN,\n" +
+                    " PRIMARY KEY (`uuid`),\n" +
+                    " UNIQUE INDEX `code` (`code`)\n" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+            ps.executeQuery();
+        } catch (Exception e) {
+            ConsoleLog.danger("Erreur lors de l'exécution de initDatabase(): " + e);
+        }
     }
 }

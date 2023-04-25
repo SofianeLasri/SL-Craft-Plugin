@@ -15,6 +15,7 @@ import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -59,10 +60,10 @@ public final class Main extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         pluginName = this.getName();
+
         // On s'assure qu'on a placeholder api
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             ConsoleLog.info("PlaceholderAPI chargé");
-            // On initialise les listeners
             getServer().getPluginManager().registerEvents(this, this);
         } else {
             ConsoleLog.danger("PlaceholderAPI n'est pas accessible!");
@@ -88,29 +89,40 @@ public final class Main extends JavaPlugin implements Listener {
         // Plugin startup logic
         try {
             databaseConnection = Database.bddOpenConn();
+            Database.initDatabase();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+
+        // On charge la config (et on la crée si elle n'existe pas)
         saveDefaultConfig();
         reloadConfig();
         config = getConfig();
         updateConfig();
 
-        initDatabase();
-
+        // On initialise les handlers
         playerDataHandler = new PlayerDataHandler(this);
-        InternalWebServer.startServer(this);
         periodicEvent = new PeriodicEvent(this);
+        InternalWebServer.startServer(this);
 
         // On initialise les commandes
         wildCommand = new Wild(this);
-        getCommand("wild").setExecutor(wildCommand);
-
         WildReset wildReset = new WildReset(this);
-        getCommand("reset-wild").setExecutor(wildReset);
-
         LinkCode linkCodeCommand = new LinkCode(this);
-        getCommand("getLinkCode").setExecutor(linkCodeCommand);
+
+        PluginCommand wild = getCommand("wild");
+        PluginCommand resetWild = getCommand("reset-wild");
+        PluginCommand getLinkCode = getCommand("getLinkCode");
+
+        // On vérifie que les commandes ont bien été initialisées dans plugin.yml
+        if (wild == null || resetWild == null || getLinkCode == null) {
+            ConsoleLog.danger("Une commande n'a pas pu être initialisée!");
+            getServer().getPluginManager().disablePlugin(this);
+        } else {
+            wild.setExecutor(wildCommand);
+            resetWild.setExecutor(wildReset);
+            getLinkCode.setExecutor(linkCodeCommand);
+        }
 
         ConsoleLog.success("Plugin démarré");
     }
@@ -340,30 +352,5 @@ public final class Main extends JavaPlugin implements Listener {
         config.options().copyDefaults(true);
         saveConfig();
         reloadConfig();
-    }
-
-    private void initDatabase() {
-        try {
-            Connection con = bddOpenConn();
-            PreparedStatement ps = con.prepareStatement("CREATE TABLE IF NOT EXISTS `site_userSetting` (\n" +
-                    "  `uuid` varchar(36) NOT NULL DEFAULT '',\n" +
-                    "  `name` varchar(128) NOT NULL,\n" +
-                    "  `value` text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,\n" +
-                    "  PRIMARY KEY (`uuid`,`name`) USING BTREE\n" +
-                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-            ps.executeQuery();
-            ps = con.prepareStatement("CREATE TABLE IF NOT EXISTS `site_linkCode` (\n" +
-                    " `uuid` VARCHAR(36) NOT NULL,\n" +
-                    " `code` VARCHAR(8) NOT NULL,\n" +
-                    " `time` TIMESTAMP NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n" +
-                    " `used` BOOLEAN,\n" +
-                    " PRIMARY KEY (`uuid`),\n" +
-                    " UNIQUE INDEX `code` (`code`)\n" +
-                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-            ps.executeQuery();
-            con.close();
-        } catch (Exception e) {
-            ConsoleLog.danger("Erreur lors de l'exécution de initDatabase(): " + e);
-        }
     }
 }
