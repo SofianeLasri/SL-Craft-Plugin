@@ -4,15 +4,17 @@ import com.slprojects.slcraftplugin.commands.admins.WildReset;
 import com.slprojects.slcraftplugin.commands.publics.LinkCode;
 import com.slprojects.slcraftplugin.commands.publics.Wild;
 import com.slprojects.slcraftplugin.parallelTasks.InternalWebServer;
-import com.slprojects.slcraftplugin.parallelTasks.events.PeriodicEvent;
 import com.slprojects.slcraftplugin.parallelTasks.dataHandlers.PlayerDataHandler;
+import com.slprojects.slcraftplugin.parallelTasks.events.PeriodicEvent;
 import com.slprojects.slcraftplugin.utils.ConsoleLog;
 import com.slprojects.slcraftplugin.utils.Database;
+import io.papermc.paper.event.player.AsyncChatEvent;
 import me.clip.placeholderapi.PlaceholderAPI;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.cacheddata.CachedMetaData;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.PluginCommand;
@@ -21,15 +23,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.json.simple.JSONObject;
 import org.mariadb.jdbc.MariaDbPoolDataSource;
 
-import javax.xml.crypto.Data;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
@@ -37,7 +38,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,68 +61,16 @@ public final class Main extends JavaPlugin implements Listener {
     public void onEnable() {
         pluginName = this.getName();
 
-        // On s'assure qu'on a placeholder api
-        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            ConsoleLog.info("PlaceholderAPI chargé");
-            getServer().getPluginManager().registerEvents(this, this);
-        } else {
-            ConsoleLog.danger("PlaceholderAPI n'est pas accessible!");
-            getServer().getPluginManager().disablePlugin(this);
-        }
-
-        // LuckPerms
-        // S'assure que le plugin est installé et évite l'affichage d'une erreur de classe inaccessible
-        if (getServer().getPluginManager().getPlugin("LuckPerms") != null) {
-            RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
-            if (provider != null) {
-                ConsoleLog.info("LuckPerms chargé");
-                luckPermsApi = provider.getProvider();
-            } else {
-                ConsoleLog.danger("LuckPerms n'est pas accessible!");
-                getServer().getPluginManager().disablePlugin(this);
-            }
-        } else {
-            ConsoleLog.danger("LuckPerms n'est pas accessible!");
-            getServer().getPluginManager().disablePlugin(this);
-        }
-
-        // Plugin startup logic
-        try {
-            databaseConnection = Database.bddOpenConn();
-            Database.initDatabase();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-        // On charge la config (et on la crée si elle n'existe pas)
-        saveDefaultConfig();
-        reloadConfig();
-        config = getConfig();
-        updateConfig();
+        this.verifyPluginsDependencies();
+        this.startupDatabaseAndConfigHandler();
 
         // On initialise les handlers
-        playerDataHandler = new PlayerDataHandler(this);
-        periodicEvent = new PeriodicEvent(this);
+        this.playerDataHandler = new PlayerDataHandler(this);
+        this.periodicEvent = new PeriodicEvent(this);
         InternalWebServer.startServer(this);
 
         // On initialise les commandes
-        wildCommand = new Wild(this);
-        WildReset wildReset = new WildReset(this);
-        LinkCode linkCodeCommand = new LinkCode(this);
-
-        PluginCommand wild = getCommand("wild");
-        PluginCommand resetWild = getCommand("reset-wild");
-        PluginCommand getLinkCode = getCommand("getLinkCode");
-
-        // On vérifie que les commandes ont bien été initialisées dans plugin.yml
-        if (wild == null || resetWild == null || getLinkCode == null) {
-            ConsoleLog.danger("Une commande n'a pas pu être initialisée!");
-            getServer().getPluginManager().disablePlugin(this);
-        } else {
-            wild.setExecutor(wildCommand);
-            resetWild.setExecutor(wildReset);
-            getLinkCode.setExecutor(linkCodeCommand);
-        }
+        this.initCommands();
 
         ConsoleLog.success("Plugin démarré");
     }
@@ -132,7 +80,15 @@ public final class Main extends JavaPlugin implements Listener {
         // Plugin shutdown logic
         ConsoleLog.danger("Plugin désactivé, au revoir!");
 
-        getServer().getOnlinePlayers().forEach(player -> playerDataHandler.quitEvent(player));
+        TextComponent goodbyeMessage = Component.text("Le serveur est en cours de redémarrage, à bientôt!");
+        PlayerKickEvent.Cause cause = PlayerKickEvent.Cause.RESTART_COMMAND;
+        PlayerQuitEvent.QuitReason reason = PlayerQuitEvent.QuitReason.KICKED;
+
+        getServer().getOnlinePlayers().forEach(player -> {
+            PlayerQuitEvent playerQuitEvent = new PlayerQuitEvent(player, goodbyeMessage, reason);
+            player.kick(goodbyeMessage, cause);
+            this.onPlayerQuit(playerQuitEvent);
+        });
 
         try {
             Database.bddCloseConn();
@@ -172,10 +128,10 @@ public final class Main extends JavaPlugin implements Listener {
     }
 
     // On renvoie chaque message des joueurs sur le canal de chat du serveur discord
-    @SuppressWarnings({"deprecation"})
     @EventHandler(priority = EventPriority.LOWEST)
-    void AsyncChatEvent(AsyncPlayerChatEvent e) {
-        String playerFormattedMessage = e.getMessage();
+    void AsyncChatEvent(AsyncChatEvent e) {
+        String originalMessage = PlainTextComponentSerializer.plainText().serialize(e.message());
+        String playerFormattedMessage = originalMessage;
         // On applique les text markup
         // Markdown
         //italique + gras "***"
@@ -208,7 +164,8 @@ public final class Main extends JavaPlugin implements Listener {
                 playerFormattedMessage = Pattern.compile("@(" + p.getName() + ")($|[ ,;:!])").matcher(playerFormattedMessage).replaceAll("§r§l§d@$1§r$2");
 
                 // On lui joue un son + un texte dans la barre d'action
-                p.sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b " + e.getPlayer().getName() + " §aVous a mentionné !"));
+                Component actionMessage = Component.text("§b " + e.getPlayer().getName() + " §aVous a mentionné !");
+                p.sendActionBar(actionMessage);
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 100, 2);
                 // On colorie les autres mentions
                 playerFormattedMessage = Pattern.compile(" @(.*?)($|[ ,;:!])").matcher(playerFormattedMessage).replaceAll("§r§b @$1§r$2");
@@ -224,10 +181,91 @@ public final class Main extends JavaPlugin implements Listener {
             }
         }
         // On envoie le message sur discord (on envoie le msg sans les couleur ni le formatage)
-        String discordFriendlyMsg = Pattern.compile("&([a-f]|r|[0-8])").matcher(e.getMessage()).replaceAll("");
+        String discordFriendlyMsg = Pattern.compile("&([a-f]|r|[0-8])").matcher(originalMessage).replaceAll("");
         sendMessageToDiscord(discordFriendlyMsg, e.getPlayer().getName());
         // On désactive le message de base de minecraft
         e.setCancelled(true);
+    }
+
+    /**
+     * Vérifie que les plugins dont on a besoin sont bien chargés
+     */
+    private void verifyPluginsDependencies() {
+        // Placeholder api
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
+            ConsoleLog.danger("PlaceholderAPI n'est pas accessible!");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        ConsoleLog.info("PlaceholderAPI chargé");
+        getServer().getPluginManager().registerEvents(this, this);
+
+        // LuckPerms
+        if (getServer().getPluginManager().getPlugin("LuckPerms") == null) {
+            ConsoleLog.danger("LuckPerms n'est pas accessible!");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
+        if (provider == null) {
+            ConsoleLog.danger("LuckPerms n'est pas accessible!");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        ConsoleLog.info("LuckPerms chargé");
+        luckPermsApi = provider.getProvider();
+    }
+
+    /**
+     * Gère la config au lance du plugin
+     */
+    private void firstTimeConfigHandler() {
+        saveDefaultConfig();
+        reloadConfig();
+        config = getConfig();
+        updateConfig();
+    }
+
+    /**
+     * Procédure de démarrage du plugin
+     */
+    private void startupDatabaseAndConfigHandler() {
+        // On initialise la base de données
+        try {
+            databaseConnection = Database.bddOpenConn();
+            Database.initDatabase();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        this.firstTimeConfigHandler();
+    }
+
+    /**
+     * Initialise les commandes
+     */
+    private void initCommands() {
+        this.wildCommand = new Wild(this);
+        WildReset wildReset = new WildReset(this);
+        LinkCode linkCodeCommand = new LinkCode(this);
+
+        PluginCommand wild = getCommand("wild");
+        PluginCommand resetWild = getCommand("reset-wild");
+        PluginCommand getLinkCode = getCommand("getLinkCode");
+
+        // On vérifie que les commandes ont bien été initialisées dans plugin.yml
+        if (wild == null || resetWild == null || getLinkCode == null) {
+            ConsoleLog.danger("Une commande n'a pas pu être initialisée!");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        wild.setExecutor(wildCommand);
+        resetWild.setExecutor(wildReset);
+        getLinkCode.setExecutor(linkCodeCommand);
     }
 
     // Permet de faire des appels vers l'api discord
@@ -301,6 +339,7 @@ public final class Main extends JavaPlugin implements Listener {
         sendMessageToDiscord(message, "SL-Craft");
     }
 
+    @Deprecated
     public Connection bddOpenConn() { // si mot de passe avec des caractère spéciaux
         Connection conn = null;
         try {
