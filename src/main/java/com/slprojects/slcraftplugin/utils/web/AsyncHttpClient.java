@@ -31,7 +31,7 @@ public class AsyncHttpClient {
     public CompletableFuture<String> get(String urlString) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(urlString))
-                .header("User-Agent", Main.config.getString("name") + " " + Main.config.getString("version"))
+                .header("User-Agent", "SL-Craft | Server Plugin")
                 .header("Server-Type", Main.config.getString("server-type"))
                 .GET()
                 .build();
@@ -56,7 +56,7 @@ public class AsyncHttpClient {
     public CompletableFuture<String> post(String urlString, PostDataBuilder postDataBuilder, Map<String, String> headers) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(urlString))
-                .header("User-Agent", Main.config.getString("name") + " " + Main.config.getString("version"))
+                .header("User-Agent", "SL-Craft | Server Plugin")
                 .header("Server-Type", Main.config.getString("server-type"))
                 .headers(headers.entrySet().stream()
                         .flatMap(entry -> Stream.of(entry.getKey(), entry.getValue()))

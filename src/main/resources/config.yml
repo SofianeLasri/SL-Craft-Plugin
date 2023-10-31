@@ -28,8 +28,6 @@ database:
   table-prefix: site_ # prefix of the tables in your database
 
 player-join-playSound: true
-player-join-message: "&a%player_name% &fa rejoint le serveur :D"
-player-quit-message: "&a%player_name% &fvient de quitter le serveur :'("
 
 # Serveur messagerie
 internal-webserver-port: 25575
@@ -49,3 +47,12 @@ ticks-per-seconds: 20
 stats:
   required-played-time-for-upgrading-players-account: 72000 # En sencondes
   players-account-upgrade-role: "habitué"
+
+# Messages
+messages:
+  server-restarting: "Le serveur est en cours de redémarrage, à bientôt!"
+  discord:
+    player-joining: "**%player_name%** vient de rejoindre le serveur"
+    player-leaving: "**%player_name%** vient de quitter le serveur"
+  player-join-message: "&a%player_name% &fa rejoint le serveur :D"
+  player-quit-message: "&a%player_name% &fvient de quitter le serveur :'("

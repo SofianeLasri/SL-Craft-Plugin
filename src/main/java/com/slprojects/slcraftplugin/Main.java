@@ -19,6 +19,7 @@ import net.luckperms.api.cacheddata.CachedMetaData;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -32,12 +33,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.json.simple.JSONObject;
 import org.mariadb.jdbc.MariaDbPoolDataSource;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -82,7 +79,10 @@ public final class Main extends JavaPlugin implements Listener {
         // Plugin shutdown logic
         ConsoleLog.danger("Plugin désactivé, au revoir!");
 
-        TextComponent goodbyeMessage = Component.text("Le serveur est en cours de redémarrage, à bientôt!");
+        String configMsg = getConfig().getString("messages.server-restarting");
+
+        assert configMsg != null;
+        TextComponent goodbyeMessage = Component.text(configMsg);
         PlayerKickEvent.Cause cause = PlayerKickEvent.Cause.RESTART_COMMAND;
         PlayerQuitEvent.QuitReason reason = PlayerQuitEvent.QuitReason.KICKED;
 
@@ -106,7 +106,7 @@ public final class Main extends JavaPlugin implements Listener {
         playerDataHandler.joinEvent(e.getPlayer());
 
         // On affiche le message de bienvenue
-        String welcomeMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("player-join-message")));
+        String welcomeMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("messages.player-join-message")));
         // Et on joue un petit son chez tous les joueurs
         for (Player p : getServer().getOnlinePlayers()) {
             p.sendMessage(welcomeMessage);
@@ -114,7 +114,8 @@ public final class Main extends JavaPlugin implements Listener {
                 p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0);
             }
         }
-        sendMessageToDiscord("**" + e.getPlayer().getName() + "** vient de rejoindre le serveur");
+        String discordWelcomeMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("messages.discord.player-joining")));
+        sendMessageToDiscord(discordWelcomeMessage);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -122,11 +123,12 @@ public final class Main extends JavaPlugin implements Listener {
         // On désactive le message par défaut
         e.quitMessage(null);
         playerDataHandler.quitEvent(e.getPlayer());
-        String quitMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("player-quit-message")));
+        String quitMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("messages.player-quit-message")));
         for (Player p : getServer().getOnlinePlayers()) {
             p.sendMessage(quitMessage);
         }
-        sendMessageToDiscord("**" + e.getPlayer().getName() + "** a quitté le serveur");
+        String discordQuitMessage = PlaceholderAPI.setPlaceholders(e.getPlayer(), Objects.requireNonNull(getConfig().getString("messages.discord.player-leaving")));
+        sendMessageToDiscord(discordQuitMessage);
     }
 
     // On renvoie chaque message des joueurs sur le canal de chat du serveur discord
@@ -229,6 +231,34 @@ public final class Main extends JavaPlugin implements Listener {
         reloadConfig();
         config = getConfig();
         updateConfig();
+
+        if (!areMessagesNotEmpty()) {
+            ConsoleLog.danger("Le fichier de configuration contient des messages vides!");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+    }
+
+    /**
+     * Vérifie que les messages de la configuration ne sont pas vides
+     *
+     * @return true si les messages ne sont pas vides, false sinon
+     */
+    public boolean areMessagesNotEmpty() {
+        ConfigurationSection messagesSection = getConfig().getConfigurationSection("messages");
+
+        if (messagesSection == null) {
+            return false; // Le groupe "messages" n'existe pas dans la configuration
+        }
+
+        for (String key : messagesSection.getKeys(true)) {
+            String message = messagesSection.getString(key);
+            if (message == null || message.isEmpty()) {
+                return false; // Une entrée du groupe "messages" est vide
+            }
+        }
+
+        return true; // Toutes les entrées du groupe "messages" sont non vides
     }
 
     /**
@@ -285,20 +315,15 @@ public final class Main extends JavaPlugin implements Listener {
         json.put("username", username);
 
         // On va appeler l'api du bot discord
-        try {
-            String urlString = config.getString("discordBot-api-url") + "mc/chat/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
+        String urlString = config.getString("discordBot-api-url") + "mc/chat/" + URLEncoder.encode(json.toJSONString(), StandardCharsets.UTF_8).replace("+", "%20");
 
-            AsyncHttpClient httpClient = new AsyncHttpClient();
-            CompletableFuture<String> response = httpClient.get(urlString);
-            response.thenAccept(res -> {
-                if (getConfig().getBoolean("msg-verbose")) {
-                    ConsoleLog.info("Func sendMessageToDiscord(String message, String username), HTTP response:" + res);
-                }
-            });
-        } catch (UnsupportedEncodingException ex) {
-            ConsoleLog.danger("Impossible de d'encoder les données. Func AsyncChatEvent(PlayerChatEvent e)");
-            ex.printStackTrace();
-        }
+        AsyncHttpClient httpClient = new AsyncHttpClient();
+        CompletableFuture<String> response = httpClient.get(urlString);
+        response.thenAccept(res -> {
+            if (getConfig().getBoolean("msg-verbose")) {
+                ConsoleLog.info("Func sendMessageToDiscord(String message, String username), HTTP response:" + res);
+            }
+        });
     }
 
     public void sendMessageToDiscord(String message) {
@@ -353,7 +378,14 @@ public final class Main extends JavaPlugin implements Listener {
             reloadConfig();
         }
 
-        // 1.6.1 - 1.6.2
+        // 1.6.2
+        if (config.contains("player-quit-message")) {
+            config.set("player-quit-message", null);
+        }
+        if(config.contains("player-join-message")) {
+            config.set("player-join-message", null);
+        }
+
         config.options().copyDefaults(true);
         saveConfig();
         reloadConfig();
