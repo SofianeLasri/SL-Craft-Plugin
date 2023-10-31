@@ -1,7 +1,7 @@
 name: SLCraftPlugin
 version: '${project.version}'
 main: com.slprojects.slcraftplugin.Main
-depend: [ PlaceholderAPI ]
+depend: [ PlaceholderAPI, LuckPerms ]
 api-version: 1.18
 authors: [ SofianeLasri ]
 description: Plugin principal de SL-Craft
