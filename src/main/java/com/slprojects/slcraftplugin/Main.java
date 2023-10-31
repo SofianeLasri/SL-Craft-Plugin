@@ -8,6 +8,7 @@ import com.slprojects.slcraftplugin.parallelTasks.dataHandlers.PlayerDataHandler
 import com.slprojects.slcraftplugin.parallelTasks.events.PeriodicEvent;
 import com.slprojects.slcraftplugin.utils.ConsoleLog;
 import com.slprojects.slcraftplugin.utils.Database;
+import com.slprojects.slcraftplugin.utils.web.AsyncHttpClient;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
@@ -42,6 +43,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -268,45 +270,6 @@ public final class Main extends JavaPlugin implements Listener {
         getLinkCode.setExecutor(linkCodeCommand);
     }
 
-    // Permet de faire des appels vers l'api discord
-    public String getHttp(String urlString) {
-        String returnData = "";
-        // Processus long et chiant
-        try {
-            URL url = new URL(urlString);
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
-            con.setRequestProperty("User-Agent", "Mozilla/5.0");
-            con.setRequestProperty("Accept-Language", "fr-FR,fr;q=0.5");
-            con.setRequestProperty("Content-Type", "application/json");
-            con.setRequestProperty("Server-Type", config.getString("server-type"));
-            con.setDoOutput(true);
-            con.setDoInput(true);
-            con.setUseCaches(false);
-            con.setAllowUserInteraction(false);
-            con.setConnectTimeout(5000);
-            con.setReadTimeout(5000);
-            con.connect();
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            String inputLine;
-
-            StringBuilder response = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-
-
-            in.close();
-            con.disconnect();
-            returnData = response.toString();
-        } catch (Exception ex) {
-            ConsoleLog.danger("Impossible de se connecter à l'url " + urlString + ". Func getHttp(String urlString)");
-            ex.printStackTrace();
-        }
-
-        return returnData;
-    }
-
     // Envoyer un message sur le discord
     @SuppressWarnings({"unchecked"})
     public void sendMessageToDiscord(String message, String username) {
@@ -325,10 +288,13 @@ public final class Main extends JavaPlugin implements Listener {
         try {
             String urlString = config.getString("discordBot-api-url") + "mc/chat/" + URLEncoder.encode(json.toJSONString(), "UTF-8").replace("+", "%20");
 
-            String response = getHttp(urlString);
-            if (getConfig().getBoolean("msg-verbose")) {
-                ConsoleLog.info("Func AsyncChatEvent(PlayerChatEvent e), HTTP response:" + response);
-            }
+            AsyncHttpClient httpClient = new AsyncHttpClient();
+            CompletableFuture<String> response = httpClient.get(urlString);
+            response.thenAccept(res -> {
+                if (getConfig().getBoolean("msg-verbose")) {
+                    ConsoleLog.info("Func sendMessageToDiscord(String message, String username), HTTP response:" + res);
+                }
+            });
         } catch (UnsupportedEncodingException ex) {
             ConsoleLog.danger("Impossible de d'encoder les données. Func AsyncChatEvent(PlayerChatEvent e)");
             ex.printStackTrace();

@@ -2,6 +2,7 @@ package com.slprojects.slcraftplugin.parallelTasks;
 
 import com.slprojects.slcraftplugin.Main;
 import com.slprojects.slcraftplugin.utils.ConsoleLog;
+import com.slprojects.slcraftplugin.utils.web.AsyncHttpClient;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.json.simple.JSONObject;
@@ -13,6 +14,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.util.concurrent.CompletableFuture;
 
 public class InternalWebServer {
     /**
@@ -134,7 +136,9 @@ public class InternalWebServer {
                     ConsoleLog.danger("Erreur lors de l'encodage du message. Func waitForDiscordMsg::startServer(Main plugin)");
                     ex.printStackTrace();
                 }
-                plugin.getHttp(urlString);
+
+                AsyncHttpClient httpClient = new AsyncHttpClient();
+                httpClient.get(urlString);
             } catch (ParseException e) {
                 e.printStackTrace();
             }
