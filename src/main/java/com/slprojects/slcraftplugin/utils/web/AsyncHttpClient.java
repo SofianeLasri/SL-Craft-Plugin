@@ -1,92 +1,75 @@
 package com.slprojects.slcraftplugin.utils.web;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import com.slprojects.slcraftplugin.Main;
+import com.slprojects.slcraftplugin.utils.ConsoleLog;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 /**
  * Client HTTP asynchrone
  */
 public class AsyncHttpClient {
 
+    private final HttpClient httpClient;
+
+    public AsyncHttpClient() {
+        this.httpClient = HttpClient.newBuilder().build();
+    }
+
     /**
      * Effectue une requête GET
+     *
      * @param urlString URL
      * @return Réponse
      */
     public CompletableFuture<String> get(String urlString) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                URL url = new URL(urlString);
-                HttpURLConnection con = (HttpURLConnection) url.openConnection();
-                con.setRequestMethod("GET");
-                con.setConnectTimeout(5000);
-                con.setReadTimeout(5000);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(urlString))
+                .header("User-Agent", Main.config.getString("name") + " " + Main.config.getString("version"))
+                .header("Server-Type", Main.config.getString("server-type"))
+                .GET()
+                .build();
 
-                BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String inputLine;
-
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
-
-                in.close();
-                con.disconnect();
-                return response.toString();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                return null;
-            }
-        });
+        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .exceptionally(ex -> {
+                    ConsoleLog.danger("Erreur lors de la requête GET vers " + urlString);
+                    ConsoleLog.danger(ex.getMessage());
+                    return null;
+                });
     }
 
     /**
      * Effectue une requête GET avec des headers
-     * @param urlString URL
+     *
+     * @param urlString       URL
      * @param postDataBuilder Données POST
-     * @param headers Headers
+     * @param headers         Headers
      * @return Réponse
      */
     public CompletableFuture<String> post(String urlString, PostDataBuilder postDataBuilder, Map<String, String> headers) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                URL url = new URL(urlString);
-                HttpURLConnection con = (HttpURLConnection) url.openConnection();
-                con.setRequestMethod("POST");
-                con.setConnectTimeout(5000);
-                con.setReadTimeout(5000);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(urlString))
+                .header("User-Agent", Main.config.getString("name") + " " + Main.config.getString("version"))
+                .header("Server-Type", Main.config.getString("server-type"))
+                .headers(headers.entrySet().stream()
+                        .flatMap(entry -> Stream.of(entry.getKey(), entry.getValue()))
+                        .toArray(String[]::new))
+                .POST(HttpRequest.BodyPublishers.ofString(postDataBuilder.build()))
+                .build();
 
-                // Set request headers
-                headers.forEach(con::setRequestProperty);
-
-                con.setDoOutput(true);
-
-                // Write the request body
-                try (OutputStream os = con.getOutputStream()) {
-                    byte[] input = postDataBuilder.build().getBytes("utf-8");
-                    os.write(input, 0, input.length);
-                }
-
-                BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String inputLine;
-
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
-
-                in.close();
-                con.disconnect();
-                return response.toString();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                return null;
-            }
-        });
+        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .exceptionally(ex -> {
+                    ConsoleLog.danger("Erreur lors de la requête POST vers " + urlString);
+                    ConsoleLog.danger(ex.getMessage());
+                    return null;
+                });
     }
 }

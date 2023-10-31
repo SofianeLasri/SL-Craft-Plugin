@@ -49,7 +49,7 @@ import java.util.regex.Pattern;
 
 public final class Main extends JavaPlugin implements Listener {
     // Variables
-    private static FileConfiguration config;
+    public static FileConfiguration config;
     public static LuckPerms luckPermsApi;
     public static String pluginName;
 
